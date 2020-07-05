@@ -1,0 +1,2 @@
+[GIN-debug] GET    /v1/                      --> cailiao_server/controllers.Hellow (3 handlers)
+[GIN-debug] Listening and serving HTTP on :8080
