@@ -1,30 +1,80 @@
 package router
 
 import (
-	"log"
-	"time"
-
+	"cailiao_server/models"
+	"cailiao_server/utils"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
-//
-func Logger() gin.HandlerFunc {
+//admin 权限
+func Permission(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		t := time.Now()
+		// 获取jwt
+		jwt := c.GetHeader("jwt")
 
-		// 设置 example 变量
-		c.Set("example", "12345")
+		//解析jwt
+		phone, err := utils.ParseJWT(jwt)
+		if err != nil {
+			//c.AbortWithStatus(http.StatusUnauthorized)
 
-		// 请求前
+			c.AbortWithStatusJSON(http.StatusOK,gin.H{
+				"code":4030,
+				"msg":"用户未登录",
+			})
+			return
+		}
 
-		c.Next()
+		//检查登录，获取role
+		user, err := models.UserGetUserByPhone(phone)
+		if err != nil {
+			//c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusOK,gin.H{
+				"code":4030,
+				"msg":"用户未登陆",
+			})
+			return
+		}
+		//fmt.Printf("用户角色: %s\n", user.Role)
 
-		// 请求后
-		latency := time.Since(t)
-		log.Print(latency)
+		switch role {
+		case "user":
+			if user.Role == "user" || user.Role == "editor" || user.Role == "admin" {
+				c.Next()
+			} else {
+				//c.AbortWithStatus(http.StatusForbidden)
+				c.AbortWithStatusJSON(http.StatusOK,gin.H{
+					"code":4030,
+					"msg":"用户权限不足",
+				})
+			}
 
-		// 获取发送的 status
-		status := c.Writer.Status()
-		log.Println(status)
+		case "editor":
+			if user.Role == "editor" || user.Role == "admin" {
+				c.Next()
+			} else {
+				//c.AbortWithStatus(http.StatusForbidden)
+				c.AbortWithStatusJSON(http.StatusOK,gin.H{
+					"code":4030,
+					"msg":"用户权限不足",
+				})
+			}
+		case "admin":
+			if user.Role == "admin" {
+				c.Next()
+			} else {
+				//c.AbortWithStatus(http.StatusForbidden)
+				c.AbortWithStatusJSON(http.StatusOK,gin.H{
+					"code":4030,
+					"msg":"用户权限不足",
+				})
+			}
+		default:
+			//c.AbortWithStatus(http.StatusForbidden)
+			c.AbortWithStatusJSON(http.StatusOK,gin.H{
+				"code":4030,
+				"msg":"用户权限不足",
+			})
+		}
 	}
 }

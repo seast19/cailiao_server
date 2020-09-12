@@ -2,15 +2,52 @@ package router
 
 import (
 	"cailiao_server/controllers"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
+
+//设置跨域头
+func cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		method := c.Request.Method
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, jwt")
+		c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		//c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
+		//c.Header("Access-Control-Allow-Credentials", "true")
+		if method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+		}
+		c.Next()
+	}
+}
 
 // DefineRouter 自定义路由
 func DefineRouter(r *gin.Engine) {
+	//跨域
+	r.Use(cors())
+
 	v1 := r.Group("/v1")
 	{
-		v1.GET("/", controllers.Hellow)
+		v1.GET("/", Permission("user"), controllers.Hellow)
+
+		//登录
+		v1.POST("/login", controllers.UserLogin) //用户登录
+		v1.GET("/login/status", controllers.UserCheckLogin)  //检查登录状态
+
+		//	用户接口
+		v1.GET("/users",Permission("admin"), controllers.UserGetAllUser)  //获取所有用户
+		v1.POST("/users",Permission("admin"), controllers.UserAddUser)  //添加用户
+		v1.DELETE("/users/:id",Permission("admin"), controllers.UserDeleteUserById)  //删除用户
+		v1.GET("/users/:id",Permission("admin"), controllers.UserGetOneUserById)  //获取单个用户
+		v1.PUT("/users/:id",Permission("admin"), controllers.UserUpdateUserById)  //更新单个用户
+
+		// 材料接口
+		v1.GET("/places",Permission("editor"), controllers.PlaceGetPlaceByPage) //获取货架位置
+		v1.DELETE("/places/:id",Permission("editor"), controllers.PlaceDelById) //删除某个货架
+		v1.POST("/places",Permission("editor"), controllers.PlaceAdd) //添加某个货架
+
+
 
 	}
 
