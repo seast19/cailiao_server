@@ -32,22 +32,27 @@ func DefineRouter(r *gin.Engine) {
 		v1.GET("/", Permission("user"), controllers.Hellow)
 
 		//登录
-		v1.POST("/login", controllers.UserLogin) //用户登录
-		v1.GET("/login/status", controllers.UserCheckLogin)  //检查登录状态
+		v1.POST("/login", controllers.UserLogin)            //用户登录
+		v1.GET("/login/status", controllers.UserCheckLogin) //检查登录状态
 
 		//	用户接口
-		v1.GET("/users",Permission("admin"), controllers.UserGetAllUser)  //获取所有用户
-		v1.POST("/users",Permission("admin"), controllers.UserAddUser)  //添加用户
-		v1.DELETE("/users/:id",Permission("admin"), controllers.UserDeleteUserById)  //删除用户
-		v1.GET("/users/:id",Permission("admin"), controllers.UserGetOneUserById)  //获取单个用户
-		v1.PUT("/users/:id",Permission("admin"), controllers.UserUpdateUserById)  //更新单个用户
+		v1.GET("/users", Permission("admin"), controllers.UserGetAllUser)            //获取所有用户
+		v1.POST("/users", Permission("admin"), controllers.UserAddUser)              //添加用户
+		v1.DELETE("/users/:id", Permission("admin"), controllers.UserDeleteUserById) //删除用户
+		v1.GET("/users/:id", Permission("admin"), controllers.UserGetOneUserById)    //获取单个用户
+		v1.PUT("/users/:id", Permission("admin"), controllers.UserUpdateUserById)    //更新单个用户
 
-		// 材料接口
-		v1.GET("/places",Permission("editor"), controllers.PlaceGetPlaceByPage) //获取货架位置
-		v1.DELETE("/places/:id",Permission("editor"), controllers.PlaceDelById) //删除某个货架
-		v1.POST("/places",Permission("editor"), controllers.PlaceAdd) //添加某个货架
+		// 货架接口
+		v1.GET("/places", Permission("editor"), controllers.PlaceGetPlaceByPage) //获取货架位置
+		v1.GET("/placesall", Permission("editor"), controllers.PlaceGetAll) //获取所有货架位置
+		v1.DELETE("/places/:id", Permission("editor"), controllers.PlaceDelById) //删除某个货架
+		v1.GET("/places/:id", Permission("editor"), controllers.PlaceGetOneById) //获取某个货架
+		v1.PUT("/places/:id", Permission("editor"), controllers.PlaceUpdateById) //更新某个货架
+		v1.POST("/places", Permission("editor"), controllers.PlaceAdd)           //添加某个货架
 
-
+		//	材料接口
+		v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage) //获取材料分页
+		v1.POST("/material", Permission("editor"), controllers.MaterialAdd) //添加材料
 
 	}
 

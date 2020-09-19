@@ -243,6 +243,7 @@ func UserCheckLogin(c *gin.Context) {
 		"code": 2000,
 		"msg":  "用户已登录",
 		"data": gin.H{
+			"realname":user.RealName,
 			"role":  user.Role,
 			"phone": phone,
 		},

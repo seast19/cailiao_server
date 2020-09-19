@@ -206,3 +206,15 @@ func UserUpdateUserById(u *User) error {
 
 	return nil
 }
+
+//构建jwt获取用户id
+func UserGetIDByJwt(jwt string) (uint,error) {
+	phone, err := utils.ParseJWT(jwt)
+	if err!=nil{
+		return 0,err
+	}
+
+	user,err:= UserGetUserByPhone(phone)
+	return user.ID,err
+
+}
