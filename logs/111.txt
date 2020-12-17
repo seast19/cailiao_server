@@ -1,0 +1,6 @@
+time="2020-11-16 14:46:29" level=info msg="| 204 |            0s |       127.0.0.1 | OPTIONS | /v1/login/status |"
+time="2020-11-16 14:46:29" level=info msg="| 200 |    120.5303ms |       127.0.0.1 | GET | /v1/login/status |"
+time="2020-11-16 14:46:29" level=info msg="| 204 |            0s |       127.0.0.1 | OPTIONS | /v1/record?page=1&per_page=8&type=&start_time=0&stop_time=0 |"
+time="2020-11-16 14:46:29" level=info msg="| 200 |    272.0702ms |       127.0.0.1 | GET | /v1/record?page=1&per_page=8&type=&start_time=0&stop_time=0 |"
+time="2020-11-16 14:46:56" level=info msg="| 204 |            0s |       127.0.0.1 | OPTIONS | /v1/material?page=1&per_page=8&place_id=0 |"
+time="2020-11-16 14:46:57" level=info msg="| 200 |    348.1588ms |       127.0.0.1 | GET | /v1/material?page=1&per_page=8&place_id=0 |"

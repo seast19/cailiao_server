@@ -14,4 +14,12 @@
 [GIN-debug] POST   /v1/places                --> cailiao_server/controllers.PlaceAdd (5 handlers)
 [GIN-debug] GET    /v1/material              --> cailiao_server/controllers.MaterialGetAllByPage (5 handlers)
 [GIN-debug] POST   /v1/material              --> cailiao_server/controllers.MaterialAdd (5 handlers)
+[GIN-debug] DELETE /v1/material/id/:id       --> cailiao_server/controllers.MaterialDelOneByID (5 handlers)
+[GIN-debug] GET    /v1/material/id/:id       --> cailiao_server/controllers.MaterialGetOneById (5 handlers)
+[GIN-debug] PUT    /v1/material/id/:id       --> cailiao_server/controllers.MaterialUpdateOneById (5 handlers)
+[GIN-debug] GET    /v1/material/s            --> cailiao_server/controllers.MaterialSearch (5 handlers)
+[GIN-debug] POST   /v1/record                --> cailiao_server/controllers.RecordAdd (5 handlers)
+[GIN-debug] GET    /v1/record                --> cailiao_server/controllers.RecordGetAllByPageAndSearch (5 handlers)
+[GIN-debug] GET    /v1/record/id/:id         --> cailiao_server/controllers.RecordGetAllByPageAndSearch (5 handlers)
+[GIN-debug] DELETE /v1/record/id/:id         --> cailiao_server/controllers.RecordDelById (5 handlers)
 [GIN-debug] Listening and serving HTTP on :7090

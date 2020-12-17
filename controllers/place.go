@@ -117,8 +117,8 @@ func PlaceDelById(c *gin.Context) {
 	}
 	err = models.PlaceDel(idNum)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 5000,
+		c.JSON(http.StatusOK, gin.H{
+			"code": 4000,
 			"msg":  err.Error(),
 		})
 		return

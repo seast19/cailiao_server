@@ -10,7 +10,7 @@ import (
 )
 
 func Hellow(c *gin.Context) {
-	c.JSON(http.StatusOK, "ok")
+	c.JSON(http.StatusOK, "this is default route ")
 }
 
 // 登录
@@ -118,7 +118,7 @@ func UserUpdateUserById(c *gin.Context) {
 		Password: data.Pwd,
 		Role:     data.Role,
 	}
-
+//fmt.Printf("%#v",user)
 	err = models.UserUpdateUserById(&user)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{

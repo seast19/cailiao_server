@@ -35,20 +35,37 @@ type Material struct {
 	Name     string `gorm:"size:255;not null"` //名称
 	Model    string `gorm:"size:255"`          //型号
 	NickName string `gorm:"size:255"`          //俗称
+	Unit     string `gorm:"size:255"`          //计量单位
 
-	Place    Place  `gorm:"ForeignKey:PlaceID;save_associations:false"`//关联货架  tips:一定要不保存关联，否则原始数据会被覆盖
+	Place    Place `gorm:"ForeignKey:PlaceID;save_associations:false"` //关联货架  tips:一定要不保存关联，否则原始数据会被覆盖
 	PlaceID  uint
-	Floor    int    //层
-	Location int  //位
+	Floor    int //层
+	Location int //位
 
-	Count        int //数量
-	PrepareCount int //常备数量
-	WarnCount    int //警报数量
-	Marks      string `gorm:"size:255"` //备注
+	Count        int    //数量
+	PrepareCount int    //常备数量
+	WarnCount    int    //警报数量
+	Marks        string `gorm:"size:255"` //备注
 
-	User User   `gorm:"ForeignKey:UserID;save_associations:false"`//创建用户
-	UserID uint
-	CreateAt   int64    //创建时间
+	User     User `gorm:"ForeignKey:UserID;save_associations:false"` //创建用户
+	UserID   uint
+	CreateAt int64 //创建时间
+}
+
+// record 记录表
+type Record struct {
+	ID          uint     `gorm:"primary_key"`
+	Material    Material `gorm:"ForeignKey:MaterialID;save_associations:false"`
+	MaterialID  uint
+	User        User `gorm:"ForeignKey:UserID;save_associations:false"` //创建用户
+	UserID      uint
+	CreateAt    int64 //创建时间
+	UpdateAt    int64
+	Type        string //记录类型 "receive":领料  "send":发料
+	CountChange int    //变动数量 如1  5
+	BeforeCount int    //变动前数量
+	AfterCount  int    //变动后数量
+	Marks       string `gorm:"size:255"` //备注
 }
 
 //初始化
@@ -61,7 +78,7 @@ func init() {
 	defer db.Close()
 
 	// 表迁移
-	db.AutoMigrate(&User{}, &Place{},&Material{})
+	db.AutoMigrate(&User{}, &Place{}, &Material{}, &Record{})
 
 	fmt.Println("数据库初始化成功")
 }

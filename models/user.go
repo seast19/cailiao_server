@@ -116,10 +116,10 @@ func UserCheckPwd(phone, pwd string) (bool, error) {
 
 	//	检查密码是否正确
 	pwdMd5 := utils.Md5(pwd + salt)
-
+	//fmt.Println(phone,pwd)
 	user := User{}
 	count := 0
-	err = db.Model(&user).Where("phone = ? AND password >= ?", phone, pwdMd5).Count(&count).Error
+	err = db.Model(&user).Where("phone = ? AND password = ?", phone, pwdMd5).Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
 		return false, errors.New("查询数据库失败")
@@ -171,7 +171,7 @@ func UserUpdateUserById(u *User) error {
 		return err
 	}
 
-	//检查参数
+	//检查参数，防止直接插入有问题数据
 	if len(u.Phone) > 0 {
 		matched, _ := regexp.Match(`\d{11}`, []byte(u.Phone))
 		if !matched {
@@ -198,7 +198,7 @@ func UserUpdateUserById(u *User) error {
 	}
 	// 填充信息
 
-	err = db.Model(u).Update(&user).Error
+	err = db.Model(u).Updates(&user).Error
 	if err != nil {
 		fmt.Println(err)
 		return errors.New("更新数据库失败")

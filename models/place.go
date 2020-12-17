@@ -57,9 +57,7 @@ func PlaceEditByID(place Place) error {
 		fmt.Println(err)
 		return err
 	}
-
 	return nil
-
 }
 
 //删除位置
@@ -71,6 +69,21 @@ func PlaceDel(id int) error {
 	defer db.Close()
 
 	place := Place{ID: uint(id)}
+
+	//检测是否有物资在此位置，有的话则不能删除
+	m := Material{}
+	m.PlaceID = place.ID
+	count := -1
+	err=db.Find(&m).Count(&count).Error
+	if err!=nil{
+		fmt.Println(err)
+		return errors.New("删除失败")
+	}
+
+	if count!=0{
+		return errors.New("此位置尚有物资，请先删除物资")
+	}
+
 	err = db.Delete(&place).Error
 	if err != nil {
 		fmt.Println(err)

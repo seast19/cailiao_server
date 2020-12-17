@@ -44,15 +44,25 @@ func DefineRouter(r *gin.Engine) {
 
 		// 货架接口
 		v1.GET("/places", Permission("editor"), controllers.PlaceGetPlaceByPage) //获取货架位置
-		v1.GET("/placesall", Permission("editor"), controllers.PlaceGetAll) //获取所有货架位置
+		v1.GET("/placesall", Permission("editor"), controllers.PlaceGetAll)      //获取所有货架位置
 		v1.DELETE("/places/:id", Permission("editor"), controllers.PlaceDelById) //删除某个货架
 		v1.GET("/places/:id", Permission("editor"), controllers.PlaceGetOneById) //获取某个货架
 		v1.PUT("/places/:id", Permission("editor"), controllers.PlaceUpdateById) //更新某个货架
 		v1.POST("/places", Permission("editor"), controllers.PlaceAdd)           //添加某个货架
 
 		//	材料接口
-		v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage) //获取材料分页
-		v1.POST("/material", Permission("editor"), controllers.MaterialAdd) //添加材料
+		v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage)      //获取材料分页
+		v1.POST("/material", Permission("editor"), controllers.MaterialAdd)              //添加材料
+		v1.DELETE("/material/id/:id", Permission("editor"), controllers.MaterialDelOneByID) //删除单个材料
+		v1.GET("/material/id/:id", Permission("editor"), controllers.MaterialGetOneById)    //获取单个材料
+		v1.PUT("/material/id/:id", Permission("editor"), controllers.MaterialUpdateOneById) //更新单个材料
+		v1.GET("/material/s", Permission("editor"), controllers.MaterialSearch)   //搜索材料
+
+		//	出入库记录接口
+		v1.POST("/record", Permission("editor"), controllers.RecordAdd) //添加记录
+		v1.GET("/record", Permission("editor"), controllers.RecordGetAllByPageAndSearch) //搜索记录
+		v1.GET("/record/id/:id", Permission("editor"), controllers.RecordGetAllByPageAndSearch) //搜索记录
+		v1.DELETE("/record/id/:id", Permission("editor"), controllers.RecordDelById) //删除记录记录
 
 	}
 
