@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres" //pgSQL
 )
 
@@ -71,7 +72,7 @@ type Record struct {
 //初始化
 func init() {
 	// 连接数据库
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=cailiao dbname=cailiao password=123456 sslmode=disable")
+	db, err := gorm.Open("mysql", "cailiao:123456@tcp(127.0.0.1:3306)/cailiao?charset=utf8mb4&parseTime=True&loc=Local")
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +86,7 @@ func init() {
 
 func getConn() (*gorm.DB, error) {
 	// 连接数据库
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=cailiao dbname=cailiao password=123456 sslmode=disable")
+	db, err := gorm.Open("mysql", "cailiao:123456@tcp(127.0.0.1:3306)/cailiao?charset=utf8mb4&parseTime=True&loc=Local")
 	if err != nil {
 		fmt.Printf("连接数据库失败 -> %s\n", err)
 		return nil, err

@@ -17,7 +17,7 @@ func TestJwt(t *testing.T) {
 
 func TestAddUser(t *testing.T) {
 	user := models.User{
-		Phone:    "user",
+		Phone:    "11111111111",
 		Password: "123456",
 		Role:     "user",
 	}

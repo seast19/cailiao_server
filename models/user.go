@@ -143,7 +143,7 @@ func UserGetUsersByPage(page, perPage int) ([]User, int, error) {
 	var users []User
 	count := 0
 
-	err = db.Select("phone, nick_name, real_name,role,ID").Offset(perPage * (page - 1)).Limit(perPage).Order("id DESC").Find(&users).Error
+	err = db.Select("phone, real_name,role,id").Offset(perPage * (page - 1)).Limit(perPage).Order("id DESC").Find(&users).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, errors.New("查询数据库失败")
@@ -208,13 +208,13 @@ func UserUpdateUserById(u *User) error {
 }
 
 //构建jwt获取用户id
-func UserGetIDByJwt(jwt string) (uint,error) {
+func UserGetIDByJwt(jwt string) (uint, error) {
 	phone, err := utils.ParseJWT(jwt)
-	if err!=nil{
-		return 0,err
+	if err != nil {
+		return 0, err
 	}
 
-	user,err:= UserGetUserByPhone(phone)
-	return user.ID,err
+	user, err := UserGetUserByPhone(phone)
+	return user.ID, err
 
 }
