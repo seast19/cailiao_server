@@ -1,4 +1,6 @@
-
+/uploads
+/logs
+/statics
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,jetbrains,visualstudiocode

@@ -66,6 +66,7 @@ func DefineRouter(r *gin.Engine) {
 		v1.PUT("/material/id/:id", Permission("editor"), controllers.MaterialUpdateOneById) //更新单个材料
 		v1.GET("/material/s", Permission("editor"), controllers.MaterialSearch)             //搜索材料
 		v1.POST("/material/all", Permission("editor"), controllers.MaterialAddAll)          //批量添加材料
+		v1.GET("/material/download", Permission("editor"), controllers.MaterialDownload)    //下载材料清单
 
 		//	出入库记录接口
 		v1.POST("/record", Permission("editor"), controllers.RecordAdd)                         //添加记录
