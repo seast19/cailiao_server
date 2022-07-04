@@ -8,7 +8,7 @@ import (
 )
 
 func TestJwt(t *testing.T) {
-	utils.GenJWT("sdds")
+	utils.GenJWT("sdds", "admin")
 }
 
 // func TestParseJWT(t *testing.T) {
@@ -19,7 +19,7 @@ func TestAddUser(t *testing.T) {
 	user := models.User{
 		Phone:    "11111111111",
 		Password: "123456",
-		Role:     "user",
+		Role:     "admin",
 	}
 
 	models.UserAddUser(&user)

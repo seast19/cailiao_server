@@ -8,25 +8,26 @@ import (
 
 //添加记录
 func RecordAdd(r *Record) error {
-	db, err := getConn()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+	//GLOBAL_DB, err := getConn()
+	//if err != nil {
+	//	return err
+	//}
+	//defer GLOBAL_DB.Close()
 
 	// 构建完整数据
 	t := time.Now().UnixNano() / 1e6
 	r.CreateAt = t
+
 	r.UpdateAt = t
 
-	tx := db.Begin()
+	tx := GlobalDb.Begin()
 
 	//分发料和领料操作
 	if r.Type == "send" {
 		m := Material{}
 		m.ID = r.MaterialID
 		//查找该物资
-		err = tx.First(&m).Error
+		err := tx.First(&m).Error
 		if err != nil {
 			fmt.Println(err)
 			tx.Rollback()
@@ -70,7 +71,7 @@ func RecordAdd(r *Record) error {
 		m := Material{}
 		m.ID = r.MaterialID
 		//查找该物资
-		err = tx.First(&m).Error
+		err := tx.First(&m).Error
 		if err != nil {
 			fmt.Println(err)
 			tx.Rollback()
@@ -116,24 +117,24 @@ func RecordAdd(r *Record) error {
 }
 
 //分页&搜索 获取记录列表
-func RecordGetAllByPageAndSearch(key string, page, perPage int) ([]Record, int, error) {
-	db, err := getConn()
-	if err != nil {
-		return []Record{}, 0, err
-	}
-	defer db.Close()
+func RecordGetAllByPageAndSearch(key string, page, perPage int) ([]Record, int64, error) {
+	//GLOBAL_DB, err := getConn()
+	//if err != nil {
+	//	return []Record{}, 0, err
+	//}
+	//defer GLOBAL_DB.Close()
 
 	//构建参数
 	records := []Record{}
 	regKey := "%" + key + "%"
-	err = db.Preload("Place").Preload("User.RealName").Where("name LIKE ? OR model LIKE ?", regKey, regKey).Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&records).Error
+	err := GlobalDb.Preload("Place").Preload("User.RealName").Where("name LIKE ? OR model LIKE ?", regKey, regKey).Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&records).Error
 	if err != nil {
 		fmt.Println(err)
 		return []Record{}, 0, err
 	}
 
-	count := 0
-	err = db.Model(Record{}).Where("name LIKE ? OR model LIKE ?", regKey, regKey).Count(&count).Error
+	var count int64 = 0
+	err = GlobalDb.Model(Record{}).Where("name LIKE ? OR model LIKE ?", regKey, regKey).Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
 		return []Record{}, 0, err
@@ -144,17 +145,17 @@ func RecordGetAllByPageAndSearch(key string, page, perPage int) ([]Record, int, 
 }
 
 //分页获取记录列表
-func RecordGetAllByPage(page, perPage int, t string, startT, stopT int) ([]Record, int, error) {
-	db, err := getConn()
-	if err != nil {
-		return []Record{}, 0, err
-	}
-	defer db.Close()
+func RecordGetAllByPage(page, perPage int, t string, startT, stopT int) ([]Record, int64, error) {
+	//GLOBAL_DB, err := getConn()
+	//if err != nil {
+	//	return []Record{}, 0, err
+	//}
+	//defer GLOBAL_DB.Close()
 
 	//fmt.Println(t)
 	//构建参数
 	records := []Record{}
-	count := 0
+	var count int64 = 0
 	typeQuery := ""
 	timeQuery := ""
 
@@ -167,13 +168,13 @@ func RecordGetAllByPage(page, perPage int, t string, startT, stopT int) ([]Recor
 		timeQuery = fmt.Sprintf("create_at >= %d AND create_at <= %d", startT, stopT)
 	}
 
-	err = db.Preload("Material").Preload("Material.Place").Preload("User").Where(typeQuery).Where(timeQuery).Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&records).Error
+	err := GlobalDb.Preload("Material").Preload("Material.Place").Preload("User").Where(typeQuery).Where(timeQuery).Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&records).Error
 	if err != nil {
 		fmt.Println(err)
 		return []Record{}, 0, err
 	}
 
-	err = db.Model(Record{}).Where(typeQuery).Where(timeQuery).Count(&count).Error
+	err = GlobalDb.Model(Record{}).Where(typeQuery).Where(timeQuery).Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
 		return []Record{}, 0, err
@@ -192,20 +193,20 @@ func RecordGetAllByPage(page, perPage int, t string, startT, stopT int) ([]Recor
 
 // 根据id删除出入库记录
 func RecordDelById(id int) error {
-	db, err := getConn()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+	//GLOBAL_DB, err := getConn()
+	//if err != nil {
+	//	return err
+	//}
+	//defer GLOBAL_DB.Close()
 
 	r := Record{ID: uint(id)}
 
-	tx := db.Begin()
+	tx := GlobalDb.Begin()
 
 	//找到该条记录
-	err = tx.First(&r).Error
+	err := tx.First(&r).Error
 	if err != nil {
-		fmt.Println("#1",err)
+		fmt.Println("#1", err)
 		tx.Rollback()
 		return err
 	}
@@ -215,7 +216,7 @@ func RecordDelById(id int) error {
 	m.ID = r.MaterialID
 	err = tx.First(&m).Error
 	if err != nil {
-		fmt.Println("#2",err)
+		fmt.Println("#2", err)
 		tx.Rollback()
 		return err
 	}
@@ -226,7 +227,7 @@ func RecordDelById(id int) error {
 		//修改material库存数
 		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count + r.CountChange}).Error
 		if err != nil {
-			fmt.Println("#3",err)
+			fmt.Println("#3", err)
 			tx.Rollback()
 			return err
 		}
@@ -234,7 +235,7 @@ func RecordDelById(id int) error {
 		//修改material库存数
 		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count - r.CountChange}).Error
 		if err != nil {
-			fmt.Println("#4",err)
+			fmt.Println("#4", err)
 			tx.Rollback()
 			return err
 		}
@@ -247,7 +248,7 @@ func RecordDelById(id int) error {
 	//删除该记录
 	err = tx.Delete(&r).Error
 	if err != nil {
-		fmt.Println("#5",err)
+		fmt.Println("#5", err)
 		tx.Rollback()
 		return err
 	}

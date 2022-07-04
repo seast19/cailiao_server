@@ -50,19 +50,28 @@ func DefineRouter(r *gin.Engine) {
 		v1.PUT("/places/:id", Permission("editor"), controllers.PlaceUpdateById) //更新某个货架
 		v1.POST("/places", Permission("editor"), controllers.PlaceAdd)           //添加某个货架
 
+		// 车号接口
+		v1.GET("/car", Permission("admin"), controllers.CarGetAllByPage)   //分页获取车号位置
+		v1.GET("/carall", Permission("admin"), controllers.CarGetAll)      //获取所有车号位置
+		v1.DELETE("/car/:id", Permission("admin"), controllers.CarDelById) //删除某个车号
+		v1.GET("/car/:id", Permission("admin"), controllers.CarGetOneById) //获取某个车号
+		v1.PUT("/car/:id", Permission("admin"), controllers.CarUpdateById) //更新某个车号
+		v1.POST("/car", Permission("admin"), controllers.CarAdd)           //添加某个车号
+
 		//	材料接口
-		v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage)      //获取材料分页
-		v1.POST("/material", Permission("editor"), controllers.MaterialAdd)              //添加材料
+		v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage)         //获取材料分页
+		v1.POST("/material", Permission("editor"), controllers.MaterialAdd)                 //添加材料
 		v1.DELETE("/material/id/:id", Permission("editor"), controllers.MaterialDelOneByID) //删除单个材料
 		v1.GET("/material/id/:id", Permission("editor"), controllers.MaterialGetOneById)    //获取单个材料
 		v1.PUT("/material/id/:id", Permission("editor"), controllers.MaterialUpdateOneById) //更新单个材料
-		v1.GET("/material/s", Permission("editor"), controllers.MaterialSearch)   //搜索材料
+		v1.GET("/material/s", Permission("editor"), controllers.MaterialSearch)             //搜索材料
+		v1.POST("/material/all", Permission("editor"), controllers.MaterialAddAll)          //批量添加材料
 
 		//	出入库记录接口
-		v1.POST("/record", Permission("editor"), controllers.RecordAdd) //添加记录
-		v1.GET("/record", Permission("editor"), controllers.RecordGetAllByPageAndSearch) //搜索记录
+		v1.POST("/record", Permission("editor"), controllers.RecordAdd)                         //添加记录
+		v1.GET("/record", Permission("editor"), controllers.RecordGetAllByPageAndSearch)        //搜索记录
 		v1.GET("/record/id/:id", Permission("editor"), controllers.RecordGetAllByPageAndSearch) //搜索记录
-		v1.DELETE("/record/id/:id", Permission("editor"), controllers.RecordDelById) //删除记录记录
+		v1.DELETE("/record/id/:id", Permission("editor"), controllers.RecordDelById)            //删除记录记录
 
 	}
 

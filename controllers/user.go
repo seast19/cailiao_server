@@ -13,7 +13,7 @@ func Hellow(c *gin.Context) {
 	c.JSON(http.StatusOK, "this is default route ")
 }
 
-// 登录
+// UserLogin 登录
 func UserLogin(c *gin.Context) {
 	//获取参数
 	data := struct {
@@ -31,18 +31,18 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	//检验账号密码
-	isCurrentPwd, err := models.UserCheckPwd(data.Phone, data.Pwd)
+	user, err := models.UserGetUserByPhone(data.Phone)
 	if err != nil {
+		fmt.Println("用户输入参数错误")
 		c.JSON(http.StatusOK, gin.H{
-			"code": 5000,
-			"msg":  err.Error(),
+			"code": 4001,
+			"msg":  "参数错误",
 		})
 		return
 	}
 
-	//账户密码错误
-	if !isCurrentPwd {
+	//检验用户密码
+	if !models.UserIsPwdSame(data.Pwd, user.Password) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
 			"msg":  "账户或密码错误",
@@ -51,21 +51,11 @@ func UserLogin(c *gin.Context) {
 	}
 
 	//生成jwt
-	jwt, err := utils.GenJWT(data.Phone)
+	jwt, err := utils.GenJWT(data.Phone, user.Role)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 5000,
 			"msg":  "生成jwt失败",
-		})
-		return
-	}
-
-	//获取用户角色
-	user, err := models.UserGetUserByPhone(data.Phone)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 5000,
-			"msg":  err.Error(),
 		})
 		return
 	}
@@ -100,6 +90,7 @@ func UserUpdateUserById(c *gin.Context) {
 		Name  string `json:"name"`
 		Pwd   string `json:"pwd"`
 		Role  string `json:"role"`
+		Car   uint   `json:"car"`
 	}{}
 
 	err = c.BindJSON(&data)
@@ -117,8 +108,9 @@ func UserUpdateUserById(c *gin.Context) {
 		RealName: data.Name,
 		Password: data.Pwd,
 		Role:     data.Role,
+		CarID:    data.Car,
 	}
-//fmt.Printf("%#v",user)
+	//fmt.Printf("%#v",user)
 	err = models.UserUpdateUserById(&user)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -142,6 +134,7 @@ func UserAddUser(c *gin.Context) {
 		Name  string `json:"name"`
 		Role  string `json:"role"`
 		Pwd   string `json:"pwd"`
+		Car   uint   `json:"car"`
 	}{}
 
 	err := c.BindJSON(&data)
@@ -152,12 +145,13 @@ func UserAddUser(c *gin.Context) {
 		})
 		return
 	}
-
+	fmt.Println(data)
 	user := models.User{
 		Phone:    data.Phone,
 		RealName: data.Name,
 		Password: data.Pwd,
 		Role:     data.Role,
+		CarID:    data.Car,
 	}
 
 	id, err := models.UserAddUser(&user)
@@ -221,7 +215,7 @@ func UserDeleteUserById(c *gin.Context) {
 func UserCheckLogin(c *gin.Context) {
 	jwt := c.GetHeader("jwt")
 
-	phone, err := utils.ParseJWT(jwt)
+	phone, _, err := utils.ParseJWT(jwt)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4030,
@@ -243,9 +237,9 @@ func UserCheckLogin(c *gin.Context) {
 		"code": 2000,
 		"msg":  "用户已登录",
 		"data": gin.H{
-			"realname":user.RealName,
-			"role":  user.Role,
-			"phone": phone,
+			"realname": user.RealName,
+			"role":     user.Role,
+			"phone":    phone,
 		},
 	})
 

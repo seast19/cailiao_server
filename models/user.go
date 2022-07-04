@@ -11,12 +11,6 @@ const salt = "qwer12345"
 
 // UserAddUser 添加用户
 func UserAddUser(newUser *User) (uint, error) {
-	db, err := getConn()
-	if err != nil {
-		return 0, err
-	}
-	defer db.Close()
-
 	//检查参数
 	matched, err := regexp.Match(`\d{11}`, []byte(newUser.Phone))
 	if !matched {
@@ -29,7 +23,7 @@ func UserAddUser(newUser *User) (uint, error) {
 	// 填充信息
 	newUser.Password = utils.Md5(newUser.Password + salt) //加密密码
 
-	err = db.Create(&newUser).Error
+	err = GlobalDb.Create(&newUser).Error
 	if err != nil {
 		fmt.Println(err)
 		return 0, errors.New("用户已存在")
@@ -41,18 +35,13 @@ func UserAddUser(newUser *User) (uint, error) {
 
 }
 
-// 删除用户
+// UserDelUserById 删除用户
 func UserDelUserById(id uint) (bool, error) {
-	db, err := getConn()
-	if err != nil {
-		return false, err
-	}
-	defer db.Close()
 
 	user := User{}
 	user.ID = id
 
-	err = db.Delete(&user).Error
+	err := GlobalDb.Delete(&user).Error
 	if err != nil {
 		fmt.Println(err)
 		return false, errors.New("删除用户失败")
@@ -62,16 +51,11 @@ func UserDelUserById(id uint) (bool, error) {
 
 }
 
-//根据phone获取用户信息
+// UserGetUserByPhone 根据phone获取用户信息
 func UserGetUserByPhone(phone string) (*User, error) {
-	db, err := getConn()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
 
 	user := User{}
-	err = db.Where("phone = ?", phone).First(&user).Error
+	err := GlobalDb.Preload("Car").Where("phone = ?", phone).First(&user).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, errors.New("查询数据库失败")
@@ -84,16 +68,16 @@ func UserGetUserByPhone(phone string) (*User, error) {
 	return &user, nil
 }
 
-//根据id获取用户信息
+// UserGetUserById 根据id获取用户信息
 func UserGetUserById(id uint) (*User, error) {
-	db, err := getConn()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
+	//GLOBAL_DB, err := getConn()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//defer GLOBAL_DB.Close()
 
 	user := User{}
-	err = db.Where("id = ?", id).First(&user).Error
+	err := GlobalDb.Preload("Car").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, errors.New("查询数据库失败")
@@ -106,20 +90,23 @@ func UserGetUserById(id uint) (*User, error) {
 	return &user, nil
 }
 
-// 检查密码正确
-func UserCheckPwd(phone, pwd string) (bool, error) {
-	db, err := getConn()
-	if err != nil {
-		return false, err
+//检验密码是否相同
+func UserIsPwdSame(pwd, pwdMD5 string) bool {
+	if utils.Md5(pwd+salt) == pwdMD5 {
+		return true
 	}
-	defer db.Close()
+	return false
+}
+
+// UserCheckPwd 检查密码正确
+func UserCheckPwd(phone, pwd string) (bool, error) {
 
 	//	检查密码是否正确
 	pwdMd5 := utils.Md5(pwd + salt)
 	//fmt.Println(phone,pwd)
 	user := User{}
-	count := 0
-	err = db.Model(&user).Where("phone = ? AND password = ?", phone, pwdMd5).Count(&count).Error
+	var count int64 = 0
+	err := GlobalDb.Model(&user).Where("phone = ? AND password = ?", phone, pwdMd5).Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
 		return false, errors.New("查询数据库失败")
@@ -132,23 +119,18 @@ func UserCheckPwd(phone, pwd string) (bool, error) {
 	return false, nil
 }
 
-//分页获取用户
-func UserGetUsersByPage(page, perPage int) ([]User, int, error) {
-	db, err := getConn()
-	if err != nil {
-		return nil, 0, err
-	}
-	defer db.Close()
+// UserGetUsersByPage 分页获取用户
+func UserGetUsersByPage(page, perPage int) ([]User, int64, error) {
 
 	var users []User
-	count := 0
+	var count int64 = 0
 
-	err = db.Select("phone, real_name,role,id").Offset(perPage * (page - 1)).Limit(perPage).Order("id DESC").Find(&users).Error
+	err := GlobalDb.Preload("Car").Omit("password").Offset(perPage * (page - 1)).Limit(perPage).Order("id DESC").Find(&users).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, errors.New("查询数据库失败")
 	}
-	err = db.Model(&User{}).Count(&count).Error
+	err = GlobalDb.Model(&User{}).Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, errors.New("查询数据库失败")
@@ -157,13 +139,8 @@ func UserGetUsersByPage(page, perPage int) ([]User, int, error) {
 	return users, count, nil
 }
 
-//修改用户
+// UserUpdateUserById 修改用户
 func UserUpdateUserById(u *User) error {
-	db, err := getConn()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 
 	//获取原始用户
 	user, err := UserGetUserById(u.ID)
@@ -196,9 +173,11 @@ func UserUpdateUserById(u *User) error {
 
 		user.Role = u.Role
 	}
+	user.CarID = u.CarID
+
 	// 填充信息
 
-	err = db.Model(u).Updates(&user).Error
+	err = GlobalDb.Model(u).Updates(&user).Error
 	if err != nil {
 		fmt.Println(err)
 		return errors.New("更新数据库失败")
@@ -207,9 +186,9 @@ func UserUpdateUserById(u *User) error {
 	return nil
 }
 
-//构建jwt获取用户id
+// UserGetIDByJwt 根据jwt获取用户id
 func UserGetIDByJwt(jwt string) (uint, error) {
-	phone, err := utils.ParseJWT(jwt)
+	phone, _, err := utils.ParseJWT(jwt)
 	if err != nil {
 		return 0, err
 	}
