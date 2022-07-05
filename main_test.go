@@ -26,11 +26,11 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestDelUser(t *testing.T) {
-	models.UserDelUserById(6)
+	models.UserDelById(6)
 }
 
 func TestGetUsers(t *testing.T) {
-	models.UserGetUsersByPage(2, 10)
+	models.UserGetAllByPage(2, 10)
 }
 
 func TestIndexOf(t *testing.T) {

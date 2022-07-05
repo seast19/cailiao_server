@@ -11,45 +11,6 @@ import (
 	"time"
 )
 
-//分页获取所有材料
-func MaterialGetAllByPage(c *gin.Context) {
-	data := struct {
-		Page    int `json:"page" form:"page"`
-		PerPage int `json:"per_page" form:"per_page"`
-		PlaceID int `json:"place_id" form:"place_id"`
-	}{}
-
-	err := c.BindQuery(&data)
-	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 4001,
-			"msg":  "参数错误",
-		})
-		return
-	}
-
-	//	查询
-	materials, count, err := models.MaterialGetByPage(data.Page, data.PerPage, 0)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 5000,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code": 2000,
-		"msg":  "ok",
-		"data": gin.H{
-			"materials": materials,
-			"count":     count,
-			"page":      data.Page,
-		},
-	})
-}
-
 //添加材料
 func MaterialAdd(c *gin.Context) {
 	data := struct {
@@ -58,6 +19,7 @@ func MaterialAdd(c *gin.Context) {
 		Unit     string `json:"unit"`
 		NickName string `json:"nick_name"` //俗称
 
+		CarID    uint `json:"car_id"`
 		PlaceID  uint `json:"place_id"`
 		Floor    int  `json:"floor"`    //层
 		Location int  `json:"location"` //位
@@ -66,6 +28,7 @@ func MaterialAdd(c *gin.Context) {
 		PrepareCount int `json:"prepare_count"` //常备数量
 		WarnCount    int `json:"warn_count"`    //警报数量
 
+		//CarId uint `json:"car_id"` //所属车id
 		Marks string `json:"marks"` //备注
 	}{}
 
@@ -81,7 +44,8 @@ func MaterialAdd(c *gin.Context) {
 
 	//获取该用户id
 	jwt := c.GetHeader("jwt")
-	uid, err := models.UserGetIDByJwt(jwt)
+
+	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -90,7 +54,6 @@ func MaterialAdd(c *gin.Context) {
 		})
 		return
 	}
-	//fmt.Println(data)
 	//	构建待添加的数据
 	material := models.Material{
 		Name:     data.Name,
@@ -106,7 +69,8 @@ func MaterialAdd(c *gin.Context) {
 		WarnCount:    data.WarnCount,
 		Marks:        data.Marks,
 		//User:         models.User{ID: uid},
-		UserID: uid,
+		UserID: user.ID,
+		CarID:  user.Car.ID,
 
 		CreateAt: time.Now().UnixNano(),
 	}
@@ -173,7 +137,7 @@ func MaterialAddAll(c *gin.Context) {
 
 	//获取该用户id
 	jwt := c.GetHeader("jwt")
-	uid, err := models.UserGetIDByJwt(jwt)
+	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -223,19 +187,23 @@ func MaterialAddAll(c *gin.Context) {
 		axis11 := fmt.Sprintf("L%d", rowIndex+1)
 		marks, _ := f.GetCellValue("Sheet1", axis11)
 
+		axis12 := fmt.Sprintf("M%d", rowIndex+1)
+		carID, _ := f.GetCellValue("Sheet1", axis12)
+
 		ms = append(ms, models.Material{
 			Name:         name,
 			Model:        model,
 			NickName:     nickname,
 			Unit:         unit,
 			PlaceID:      uint(utils.String2Number(placeID)),
+			CarID:        uint(utils.String2Number(carID)),
 			Floor:        utils.String2Number(floor),
 			Location:     utils.String2Number(location),
 			Count:        utils.String2Number(count),
 			PrepareCount: utils.String2Number(prepareCount),
 			WarnCount:    utils.String2Number(warnCount),
 			Marks:        marks,
-			UserID:       uid,
+			UserID:       user.ID,
 			CreateAt:     time.Now().UnixNano(),
 		})
 	}
@@ -257,6 +225,45 @@ func MaterialAddAll(c *gin.Context) {
 		"msg":  "上传成功",
 	})
 }
+
+//分页获取所有材料
+//func MaterialGetAllByPage(c *gin.Context) {
+//	data := struct {
+//		Page    int `json:"page" form:"page"`
+//		PerPage int `json:"per_page" form:"per_page"`
+//		PlaceID int `json:"place_id" form:"place_id"`
+//	}{}
+//
+//	err := c.BindQuery(&data)
+//	if err != nil {
+//		fmt.Println(err)
+//		c.JSON(http.StatusBadRequest, gin.H{
+//			"code": 4001,
+//			"msg":  "参数错误",
+//		})
+//		return
+//	}
+//
+//	//	查询
+//	materials, count, err := models.MaterialGetByPage(data.Page, data.PerPage, 0)
+//	if err != nil {
+//		c.JSON(http.StatusInternalServerError, gin.H{
+//			"code": 5000,
+//			"msg":  err.Error(),
+//		})
+//		return
+//	}
+//
+//	c.JSON(http.StatusOK, gin.H{
+//		"code": 2000,
+//		"msg":  "ok",
+//		"data": gin.H{
+//			"materials": materials,
+//			"count":     count,
+//			"page":      data.Page,
+//		},
+//	})
+//}
 
 // MaterialSearch 搜索材料
 func MaterialSearch(c *gin.Context) {
@@ -374,6 +381,7 @@ func MaterialUpdateOneById(c *gin.Context) {
 		Unit     string `json:"unit"`
 		NickName string `json:"nick_name"` //俗称
 
+		CarID    uint `json:"car_id"`
 		PlaceID  uint `json:"place_id"`
 		Floor    int  `json:"floor"`    //层
 		Location int  `json:"location"` //位
@@ -398,7 +406,7 @@ func MaterialUpdateOneById(c *gin.Context) {
 	}
 
 	jwt := c.GetHeader("jwt")
-	uid, err := models.UserGetIDByJwt(jwt)
+	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
@@ -415,6 +423,7 @@ func MaterialUpdateOneById(c *gin.Context) {
 		Unit:     data.Unit,
 		NickName: data.NickName,
 
+		CarID:    data.CarID,
 		PlaceID:  data.PlaceID,
 		Floor:    data.Floor,
 		Location: data.Location,
@@ -424,7 +433,7 @@ func MaterialUpdateOneById(c *gin.Context) {
 		WarnCount:    data.WarnCount,
 		Marks:        data.Marks,
 
-		UserID: uid,
+		UserID: user.ID,
 	}
 
 	err = models.MaterialEditByID(material)

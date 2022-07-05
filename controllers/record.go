@@ -29,7 +29,7 @@ func RecordAdd(c *gin.Context) {
 	//fmt.Println(data)
 	//获取该用户id
 	jwt := c.GetHeader("jwt")
-	uid, err := models.UserGetIDByJwt(jwt)
+	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -42,7 +42,7 @@ func RecordAdd(c *gin.Context) {
 	//fmt.Println(uid)
 
 	record := models.Record{}
-	record.UserID = uid
+	record.UserID = user.ID
 	record.MaterialID = uint(data.Id)
 	record.Marks = data.Marks
 	record.CountChange = data.ChangeCount
@@ -66,12 +66,13 @@ func RecordAdd(c *gin.Context) {
 //分页带搜索获取记录列表
 func RecordGetAllByPageAndSearch(c *gin.Context) {
 	data := struct {
-		Page      int    `json:"page" form:"page"`
-		PerPage   int    `json:"per_page" form:"per_page"`
-		Type      string `json:"type" form:"type"`
-		StartTime int    `json:"start_time" form:"start_time"`
-		StopTime  int    `json:"stop_time" form:"stop_time"` //ms
-		Id        uint   `json:"id" form:"id"`
+		Page       int    `json:"page" form:"page"`
+		PerPage    int    `json:"per_page" form:"per_page"`
+		Type       string `json:"type" form:"type"`
+		StartTime  int    `json:"start_time" form:"start_time"`
+		StopTime   int    `json:"stop_time" form:"stop_time"` //ms
+		MaterialID uint   `json:"id" form:"id"`               //待id则只查看该材料id的记录
+		CarID      uint   `json:"car_id" form:"car_id"`       //含carid则查看该车id
 	}{}
 
 	err := c.BindQuery(&data)
@@ -83,15 +84,29 @@ func RecordGetAllByPageAndSearch(c *gin.Context) {
 		})
 		return
 	}
-	//fmt.Println(data)
+
 	//	查询
-	records, count, err := models.RecordGetAllByPage(data.Page, data.PerPage, data.Type, data.StartTime, data.StopTime, data.Id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 5000,
-			"msg":  err.Error(),
-		})
-		return
+	fmt.Println(data)
+	records := []models.Record{}
+	var count int64
+	if data.MaterialID == 0 {
+		records, count, err = models.RecordGetAllByPage(data.Page, data.PerPage, data.Type, data.StartTime, data.StopTime, data.CarID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code": 5000,
+				"msg":  err.Error(),
+			})
+			return
+		}
+	} else {
+		records, count, err = models.RecordGetAllWithMIdByPage(data.Page, data.PerPage, data.Type, data.StartTime, data.StopTime, data.MaterialID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code": 5000,
+				"msg":  err.Error(),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

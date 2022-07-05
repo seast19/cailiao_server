@@ -9,11 +9,6 @@ import (
 
 //添加记录
 func RecordAdd(r *Record) error {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return err
-	//}
-	//defer GLOBAL_DB.Close()
 
 	// 构建完整数据
 	t := time.Now().UnixNano() / 1e6
@@ -119,11 +114,6 @@ func RecordAdd(r *Record) error {
 
 //分页&搜索 获取记录列表
 func RecordGetAllByPageAndSearch(key string, page, perPage int) ([]Record, int64, error) {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return []Record{}, 0, err
-	//}
-	//defer GLOBAL_DB.Close()
 
 	//构建参数
 	records := []Record{}
@@ -145,10 +135,12 @@ func RecordGetAllByPageAndSearch(key string, page, perPage int) ([]Record, int64
 
 }
 
-//分页获取记录列表
-func RecordGetAllByPage(page, perPage int, t string, startT, stopT int, id uint) ([]Record, int64, error) {
+//分页获取本车所有记录列表
+func RecordGetAllByPage(page, perPage int, t string, startT, stopT int, cid uint) ([]Record, int64, error) {
 	//构建参数
 	records := []Record{}
+	materials := []Material{}
+	mids := []uint{}
 	var count int64 = 0
 	typeQuery := ""
 	timeQuery := ""
@@ -162,14 +154,27 @@ func RecordGetAllByPage(page, perPage int, t string, startT, stopT int, id uint)
 		timeQuery = fmt.Sprintf("create_at >= %d AND create_at <= %d", startT, stopT)
 	}
 
+	//查找符合carid 的所有material
 	err := GlobalDb.
+		Preload("Car").
+		Where("car_id = ? or 0 = ?", cid, cid).
+		Find(&materials).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+	for _, material := range materials {
+		mids = append(mids, material.ID)
+	}
+
+	err = GlobalDb.
 		Preload("Material.Place").
 		Preload("User", func(db *gorm.DB) *gorm.DB {
 			return db.Preload("Car").Omit("password")
 		}).
 		Where(typeQuery).
 		Where(timeQuery).
-		Where("material_id = ? or 0 = ?", id, id).
+		Where("material_id in ?", mids).
 		Offset((page - 1) * perPage).Limit(perPage).
 		Order("id DESC").
 		Find(&records).Error
@@ -181,7 +186,76 @@ func RecordGetAllByPage(page, perPage int, t string, startT, stopT int, id uint)
 	err = GlobalDb.Model(Record{}).
 		Where(typeQuery).
 		Where(timeQuery).
-		Where("material_id = ? or 0 = ?", id, id).
+		Where("material_id in ? ", mids).
+		Count(&count).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+
+	//过滤掉密码
+	//records2 := []Record{}
+	//for _, item := range records {
+	//	item.User.Password = ""
+	//	records2 = append(records2, item)
+	//}
+
+	return records, count, nil
+
+}
+
+//分页获取指定材料所有记录列表
+func RecordGetAllWithMIdByPage(page, perPage int, t string, startT, stopT int, mid uint) ([]Record, int64, error) {
+	//构建参数
+	records := []Record{}
+	//materials := []Material{}
+	//mids := []uint{}
+	var count int64 = 0
+	typeQuery := ""
+	timeQuery := ""
+
+	//构建操作参数
+	if t != "" {
+		typeQuery = fmt.Sprintf("Type = '%s'", t)
+	}
+
+	if startT != 0 {
+		timeQuery = fmt.Sprintf("create_at >= %d AND create_at <= %d", startT, stopT)
+	}
+
+	//查找符合carid 的所有material
+	//err := GlobalDb.
+	//	Preload("Car").
+	//	Where("car_id = ? or 0 = ?", cid, cid).
+	//	Find(&materials).Error
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return []Record{}, 0, err
+	//}
+	//for _, material := range materials {
+	//	mids = append(mids, material.ID)
+	//}
+
+	err := GlobalDb.
+		Preload("Material.Place").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where(typeQuery).
+		Where(timeQuery).
+		Where("material_id = ? or 0 = ?", mid, mid).
+		Offset((page - 1) * perPage).Limit(perPage).
+		Order("id DESC").
+		Find(&records).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+
+	err = GlobalDb.Model(Record{}).
+		Where(typeQuery).
+		Where(timeQuery).
+		Where("material_id = ? or 0 = ?", mid, mid).
 		Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
@@ -201,11 +275,6 @@ func RecordGetAllByPage(page, perPage int, t string, startT, stopT int, id uint)
 
 // 根据id删除出入库记录
 func RecordDelById(id int) error {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return err
-	//}
-	//defer GLOBAL_DB.Close()
 
 	r := Record{ID: uint(id)}
 

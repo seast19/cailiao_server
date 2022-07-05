@@ -20,27 +20,25 @@ func UserLogin(c *gin.Context) {
 		Phone string `json:"phone"`
 		Pwd   string `json:"pwd"`
 	}{}
-
 	err := c.BindJSON(&data)
 	if err != nil {
-		fmt.Println("用户输入参数错误")
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
-			"msg":  "参数错误",
+			"msg":  "用户输入参数错误",
 		})
 		return
 	}
 
-	user, err := models.UserGetUserByPhone(data.Phone)
+	//查询数据库
+	user, err := models.UserGetByPhone(data.Phone)
 	if err != nil {
-		fmt.Println("用户输入参数错误")
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
-			"msg":  "参数错误",
+			"msg":  err.Error(),
 		})
 		return
 	}
-
+	fmt.Println(data.Pwd, user.Password)
 	//检验用户密码
 	if !models.UserIsPwdSame(data.Pwd, user.Password) {
 		c.JSON(http.StatusOK, gin.H{
@@ -61,6 +59,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	//返回数据
+	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{
 		"code": 2000,
 		"msg":  "登录成功",
@@ -69,12 +68,13 @@ func UserLogin(c *gin.Context) {
 			"phone": user.Phone,
 			"role":  user.Role,
 			"car":   user.CarID,
+			"user":  user,
 		},
 	})
 }
 
-// 修改用户
-func UserUpdateUserById(c *gin.Context) {
+// UserUpdateById 修改用户
+func UserUpdateById(c *gin.Context) {
 	idStr := c.Param("id")
 
 	idNum, err := strconv.Atoi(idStr)
@@ -112,7 +112,7 @@ func UserUpdateUserById(c *gin.Context) {
 		CarID:    data.Car,
 	}
 	//fmt.Printf("%#v",user)
-	err = models.UserUpdateUserById(&user)
+	err = models.UserUpdateById(&user)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
@@ -123,12 +123,12 @@ func UserUpdateUserById(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 2000,
-		"msg":  "ok",
+		"msg":  "修改成功",
 	})
 
 }
 
-// 添加用户
+// UserAddUser 添加用户
 func UserAddUser(c *gin.Context) {
 	data := struct {
 		Phone string `json:"phone"`
@@ -146,7 +146,7 @@ func UserAddUser(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(data)
+	//fmt.Println(data)
 	user := models.User{
 		Phone:    data.Phone,
 		RealName: data.Name,
@@ -174,8 +174,8 @@ func UserAddUser(c *gin.Context) {
 
 }
 
-// 删除用户
-func UserDeleteUserById(c *gin.Context) {
+// UserDeleteById 删除用户
+func UserDeleteById(c *gin.Context) {
 	idStr := c.Param("id")
 
 	idNum, err := strconv.Atoi(idStr)
@@ -187,7 +187,7 @@ func UserDeleteUserById(c *gin.Context) {
 		return
 	}
 
-	isDeleted, err := models.UserDelUserById(uint(idNum))
+	isDeleted, err := models.UserDelById(uint(idNum))
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 5000,
@@ -212,7 +212,7 @@ func UserDeleteUserById(c *gin.Context) {
 
 }
 
-// 检查是否登录
+// UserCheckLogin 检查是否登录
 func UserCheckLogin(c *gin.Context) {
 	jwt := c.GetHeader("jwt")
 
@@ -225,7 +225,7 @@ func UserCheckLogin(c *gin.Context) {
 		return
 	}
 
-	user, err := models.UserGetUserByPhone(phone)
+	user, err := models.UserGetByPhone(phone)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
@@ -234,6 +234,7 @@ func UserCheckLogin(c *gin.Context) {
 		return
 	}
 
+	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{
 		"code": 2000,
 		"msg":  "用户已登录",
@@ -242,16 +243,17 @@ func UserCheckLogin(c *gin.Context) {
 			"role":     user.Role,
 			"phone":    phone,
 			"car":      user.CarID,
+			"user":     user,
 		},
 	})
 
 }
 
-//获取所有用户
+// UserGetAllUser 获取所有用户
 func UserGetAllUser(c *gin.Context) {
 	data := struct {
-		Page    int `json:"page" form:"page"`
-		PerPage int `json:"per_page" form:"per_page"`
+		Page    int `json:"page" `
+		PerPage int `json:"per_page" `
 	}{}
 
 	err := c.BindQuery(&data)
@@ -267,15 +269,12 @@ func UserGetAllUser(c *gin.Context) {
 	if data.Page < 1 {
 		data.Page = 1
 	}
-	//if data.PerPage < 10 || data.PerPage > 100 {
-	//	data.PerPage = 10
-	//}
 
-	users, count, err := models.UserGetUsersByPage(data.Page, data.PerPage)
+	users, count, err := models.UserGetAllByPage(data.Page, data.PerPage)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
-			"msg":  "参数错误",
+			"msg":  err.Error(),
 		})
 		return
 	}
@@ -291,7 +290,7 @@ func UserGetAllUser(c *gin.Context) {
 	})
 }
 
-//获取单个用户
+// UserGetOneUserById 获取单个用户
 func UserGetOneUserById(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -304,11 +303,11 @@ func UserGetOneUserById(c *gin.Context) {
 		return
 	}
 
-	user, err := models.UserGetUserById(uint(idNum))
+	user, err := models.UserGetById(uint(idNum))
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
-			"msg":  "参数错误",
+			"msg":  err.Error(),
 		})
 		return
 	}

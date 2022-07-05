@@ -36,11 +36,11 @@ func DefineRouter(r *gin.Engine) {
 		v1.GET("/login/status", controllers.UserCheckLogin) //检查登录状态
 
 		//	用户接口
-		v1.GET("/users", Permission("admin"), controllers.UserGetAllUser)            //获取所有用户
-		v1.POST("/users", Permission("admin"), controllers.UserAddUser)              //添加用户
-		v1.DELETE("/users/:id", Permission("admin"), controllers.UserDeleteUserById) //删除用户
-		v1.GET("/users/:id", Permission("admin"), controllers.UserGetOneUserById)    //获取单个用户
-		v1.PUT("/users/:id", Permission("admin"), controllers.UserUpdateUserById)    //更新单个用户
+		v1.GET("/users", Permission("admin"), controllers.UserGetAllUser)         //获取所有用户
+		v1.POST("/users", Permission("admin"), controllers.UserAddUser)           //添加用户
+		v1.DELETE("/users/:id", Permission("admin"), controllers.UserDeleteById)  //删除用户
+		v1.GET("/users/:id", Permission("admin"), controllers.UserGetOneUserById) //获取单个用户
+		v1.PUT("/users/:id", Permission("admin"), controllers.UserUpdateById)     //更新单个用户
 
 		// 货架接口
 		v1.GET("/places", Permission("editor"), controllers.PlaceGetPlaceByPage) //获取货架位置
@@ -59,7 +59,7 @@ func DefineRouter(r *gin.Engine) {
 		v1.POST("/car", Permission("admin"), controllers.CarAdd)           //添加某个车号
 
 		//	材料接口
-		v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage)         //获取材料分页
+		//v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage)         //获取材料分页
 		v1.POST("/material", Permission("editor"), controllers.MaterialAdd)                 //添加材料
 		v1.DELETE("/material/id/:id", Permission("editor"), controllers.MaterialDelOneByID) //删除单个材料
 		v1.GET("/material/id/:id", Permission("editor"), controllers.MaterialGetOneById)    //获取单个材料

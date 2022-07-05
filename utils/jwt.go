@@ -21,7 +21,7 @@ func GenJWT(phone, role string) (string, error) {
 	return tokenString, err
 }
 
-// ParseJWT 解析jwt返回号码
+// ParseJWT 解析jwt返回号码 id error
 func ParseJWT(s string) (string, string, error) {
 	token, err := jwt.Parse(s, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

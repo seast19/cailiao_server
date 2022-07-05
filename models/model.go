@@ -58,11 +58,12 @@ type Material struct {
 	NickName string `gorm:"size:255"`          //俗称
 	Unit     string `gorm:"size:255"`          //计量单位
 
-	//Car   Car //关联车号，以车号来区分  tips:一定要不保存关联，否则原始数据会被覆盖
-	//CarID uint
+	Car   Car //关联车号，以车号来区分  tips:一定要不保存关联，否则原始数据会被覆盖
+	CarID uint
 
-	Place    Place //关联货架  tips:一定要不保存关联，否则原始数据会被覆盖
-	PlaceID  uint
+	Place   Place //关联货架  tips:一定要不保存关联，否则原始数据会被覆盖
+	PlaceID uint
+	
 	Floor    int //层
 	Location int //位
 

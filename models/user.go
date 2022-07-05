@@ -3,7 +3,7 @@ package models
 import (
 	"cailiao_server/utils"
 	"errors"
-	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"regexp"
 )
 
@@ -25,40 +25,38 @@ func UserAddUser(newUser *User) (uint, error) {
 
 	err = GlobalDb.Create(&newUser).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return 0, errors.New("用户已存在")
 	}
 
-	fmt.Printf("创建用户成功 [%d]%s\n", newUser.ID, newUser.Phone)
+	logs.Info("创建用户成功 [%d]%s\n", newUser.ID, newUser.Phone)
 
 	return newUser.ID, nil
-
 }
 
-// UserDelUserById 删除用户
-func UserDelUserById(id uint) (bool, error) {
-
+// UserDelById 删除用户
+func UserDelById(id uint) (bool, error) {
 	user := User{}
 	user.ID = id
 
 	err := GlobalDb.Delete(&user).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return false, errors.New("删除用户失败")
 	}
-
 	return true, nil
-
 }
 
-// UserGetUserByPhone 根据phone获取用户信息
-func UserGetUserByPhone(phone string) (*User, error) {
-
+// UserGetByPhone 根据phone获取用户信息
+func UserGetByPhone(phone string) (*User, error) {
 	user := User{}
-	err := GlobalDb.Preload("Car").Where("phone = ?", phone).First(&user).Error
+	err := GlobalDb.
+		Preload("Car").
+		Where("phone = ?", phone).
+		First(&user).Error
 	if err != nil {
-		fmt.Println(err)
-		return nil, errors.New("查询数据库失败")
+		logs.Error(err)
+		return nil, errors.New("获取用户信息失败#1")
 	}
 
 	if user.ID == 0 {
@@ -68,19 +66,16 @@ func UserGetUserByPhone(phone string) (*User, error) {
 	return &user, nil
 }
 
-// UserGetUserById 根据id获取用户信息
-func UserGetUserById(id uint) (*User, error) {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer GLOBAL_DB.Close()
-
+// UserGetById 根据id获取用户信息
+func UserGetById(id uint) (*User, error) {
 	user := User{}
-	err := GlobalDb.Preload("Car").Where("id = ?", id).First(&user).Error
+	err := GlobalDb.
+		Preload("Car").
+		Where("id = ?", id).
+		First(&user).Error
 	if err != nil {
-		fmt.Println(err)
-		return nil, errors.New("查询数据库失败")
+		logs.Error(err)
+		return nil, errors.New("获取用户信息失败#2")
 	}
 
 	if user.ID == 0 {
@@ -88,6 +83,18 @@ func UserGetUserById(id uint) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+// UserGetByJwt 根据jwt获取用户id
+func UserGetByJwt(jwt string) (*User, error) {
+	phone, _, err := utils.ParseJWT(jwt)
+	if err != nil {
+		return nil, errors.New("获取用户信息失败#3")
+	}
+
+	user, err := UserGetByPhone(phone)
+	return user, err
+
 }
 
 //检验密码是否相同
@@ -98,52 +105,38 @@ func UserIsPwdSame(pwd, pwdMD5 string) bool {
 	return false
 }
 
-// UserCheckPwd 检查密码正确
-func UserCheckPwd(phone, pwd string) (bool, error) {
-
-	//	检查密码是否正确
-	pwdMd5 := utils.Md5(pwd + salt)
-	//fmt.Println(phone,pwd)
-	user := User{}
-	var count int64 = 0
-	err := GlobalDb.Model(&user).Where("phone = ? AND password = ?", phone, pwdMd5).Count(&count).Error
-	if err != nil {
-		fmt.Println(err)
-		return false, errors.New("查询数据库失败")
-	}
-
-	if count == 1 {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-// UserGetUsersByPage 分页获取用户
-func UserGetUsersByPage(page, perPage int) ([]User, int64, error) {
+// UserGetAllByPage 分页获取所有用户
+func UserGetAllByPage(page, perPage int) ([]User, int64, error) {
 
 	var users []User
 	var count int64 = 0
 
-	err := GlobalDb.Preload("Car").Omit("password").Offset(perPage * (page - 1)).Limit(perPage).Order("id DESC").Find(&users).Error
+	err := GlobalDb.
+		Preload("Car").
+		Omit("password").
+		Offset(perPage * (page - 1)).Limit(perPage).
+		Order("id DESC").
+		Find(&users).Error
 	if err != nil {
-		fmt.Println(err)
-		return nil, 0, errors.New("查询数据库失败")
+		logs.Error(err)
+		return nil, 0, errors.New("获取用户数据失败")
 	}
-	err = GlobalDb.Model(&User{}).Count(&count).Error
+	err = GlobalDb.
+		Model(&User{}).
+		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
-		return nil, 0, errors.New("查询数据库失败")
+		logs.Error(err)
+		return nil, 0, errors.New("获取用户数据失败")
 	}
 
 	return users, count, nil
 }
 
-// UserUpdateUserById 修改用户
-func UserUpdateUserById(u *User) error {
+// UserUpdateById 修改用户
+func UserUpdateById(u *User) error {
 
 	//获取原始用户
-	user, err := UserGetUserById(u.ID)
+	user, err := UserGetById(u.ID)
 	if err != nil {
 		return err
 	}
@@ -179,21 +172,8 @@ func UserUpdateUserById(u *User) error {
 
 	err = GlobalDb.Model(u).Updates(&user).Error
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("更新数据库失败")
+		logs.Error(err)
+		return errors.New("修改用户数据失败")
 	}
-
 	return nil
-}
-
-// UserGetIDByJwt 根据jwt获取用户id
-func UserGetIDByJwt(jwt string) (uint, error) {
-	phone, _, err := utils.ParseJWT(jwt)
-	if err != nil {
-		return 0, err
-	}
-
-	user, err := UserGetUserByPhone(phone)
-	return user.ID, err
-
 }
