@@ -71,6 +71,7 @@ func RecordGetAllByPageAndSearch(c *gin.Context) {
 		Type      string `json:"type" form:"type"`
 		StartTime int    `json:"start_time" form:"start_time"`
 		StopTime  int    `json:"stop_time" form:"stop_time"` //ms
+		Id        uint   `json:"id" form:"id"`
 	}{}
 
 	err := c.BindQuery(&data)
@@ -84,7 +85,7 @@ func RecordGetAllByPageAndSearch(c *gin.Context) {
 	}
 	//fmt.Println(data)
 	//	查询
-	records, count, err := models.RecordGetAllByPage(data.Page, data.PerPage, data.Type, data.StartTime, data.StopTime)
+	records, count, err := models.RecordGetAllByPage(data.Page, data.PerPage, data.Type, data.StartTime, data.StopTime, data.Id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 5000,

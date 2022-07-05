@@ -52,7 +52,7 @@ func DefineRouter(r *gin.Engine) {
 
 		// 车号接口
 		v1.GET("/car", Permission("admin"), controllers.CarGetAllByPage)   //分页获取车号位置
-		v1.GET("/carall", Permission("admin"), controllers.CarGetAll)      //获取所有车号位置
+		v1.GET("/carall", Permission("editor"), controllers.CarGetAll)     //获取所有车号位置
 		v1.DELETE("/car/:id", Permission("admin"), controllers.CarDelById) //删除某个车号
 		v1.GET("/car/:id", Permission("admin"), controllers.CarGetOneById) //获取某个车号
 		v1.PUT("/car/:id", Permission("admin"), controllers.CarUpdateById) //更新某个车号

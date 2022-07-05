@@ -68,6 +68,7 @@ func UserLogin(c *gin.Context) {
 			"jwt":   jwt,
 			"phone": user.Phone,
 			"role":  user.Role,
+			"car":   user.CarID,
 		},
 	})
 }
@@ -240,6 +241,7 @@ func UserCheckLogin(c *gin.Context) {
 			"realname": user.RealName,
 			"role":     user.Role,
 			"phone":    phone,
+			"car":      user.CarID,
 		},
 	})
 
