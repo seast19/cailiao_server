@@ -3,281 +3,115 @@ package models
 import (
 	"errors"
 	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"gorm.io/gorm"
 	"time"
 )
 
-//添加记录
-func RecordAdd(r *Record) error {
+// RecordAdd 添加出库记录
+func RecordAddSend(r *Record) error {
 
 	// 构建完整数据
 	t := time.Now().UnixNano() / 1e6
 	r.CreateAt = t
+	r.UpdateAt = t
 
+	tx := GlobalDb.Begin()
+	//发料
+	m := Material{}
+	m.ID = r.MaterialID
+	//查找该物资
+	err := tx.First(&m).Error
+	if err != nil {
+		logs.Error(err)
+		tx.Rollback()
+		return errors.New("无此物资id")
+	}
+	//库存为0
+	if m.Count <= 0 {
+		tx.Rollback()
+		return errors.New("此物资库存数为0")
+	}
+
+	//库存数比发料数少
+	if m.Count < r.SendCount {
+		tx.Rollback()
+		return errors.New("此物资库存数不足以发料")
+	}
+
+	//创建record记录
+	r.SendCount = r.SendCount
+	//r.BeforeCount = m.Count
+	//r.AfterCount = m.Count - r.CountChange
+	err = tx.Create(r).Error
+	if err != nil {
+		logs.Error(err)
+		tx.Rollback()
+		return errors.New("添加记录失败")
+	}
+
+	//修改material库存数
+	err = tx.Model(&m).
+		Select("count").
+		Updates(map[string]interface{}{"count": m.Count - r.SendCount}).Error
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// RecordAdd 添加入库记录
+func RecordAddReceive(r *Record) error {
+
+	// 构建完整数据
+	t := time.Now().UnixNano() / 1e6
+	r.CreateAt = t
 	r.UpdateAt = t
 
 	tx := GlobalDb.Begin()
 
-	//分发料和领料操作
-	if r.Type == "send" {
-		m := Material{}
-		m.ID = r.MaterialID
-		//查找该物资
-		err := tx.First(&m).Error
-		if err != nil {
-			fmt.Println(err)
-			tx.Rollback()
-			return errors.New("无此物资id")
-		}
-		//fmt.Println(m)
-		//库存为0
-		if m.Count <= 0 {
-			tx.Rollback()
-			return errors.New("此物资库存数为0")
-		}
-
-		//库存数比发料数少
-		if m.Count < r.CountChange {
-			tx.Rollback()
-			return errors.New("此物资库存数不足以发料")
-		}
-
-		//创建record记录
-		r.BeforeCount = m.Count
-		r.AfterCount = m.Count - r.CountChange
-		err = tx.Create(r).Error
-		if err != nil {
-			fmt.Println(err)
-			tx.Rollback()
-			return errors.New("添加记录失败")
-		}
-
-		//修改material库存数
-		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count - r.CountChange}).Error
-		if err != nil {
-			fmt.Println(err)
-			tx.Rollback()
-			return err
-		}
-
-		tx.Commit()
-		return nil
-
-	} else if r.Type == "receive" {
-		m := Material{}
-		m.ID = r.MaterialID
-		//查找该物资
-		err := tx.First(&m).Error
-		if err != nil {
-			fmt.Println(err)
-			tx.Rollback()
-			return errors.New("无此物资id")
-		}
-		//fmt.Println(m)
-		//库存为0
-		//if m.Count <= 0 {
-		//	tx.Rollback()
-		//	return errors.New("此物资库存数为0")
-		//}
-
-		//库存数比发料数少
-		//if m.Count < r.CountChange {
-		//	tx.Rollback()
-		//	return errors.New("此物资库存数不足以发料")
-		//}
-
-		//创建record记录
-		r.BeforeCount = m.Count
-		r.AfterCount = m.Count + r.CountChange
-		err = tx.Create(r).Error
-		if err != nil {
-			fmt.Println(err)
-			tx.Rollback()
-			return errors.New("添加记录失败")
-		}
-
-		//修改material库存数
-		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count + r.CountChange}).Error
-		if err != nil {
-			fmt.Println(err)
-			tx.Rollback()
-			return err
-		}
-
-		tx.Commit()
-		return nil
+	m := Material{}
+	m.ID = r.MaterialID
+	//查找该物资
+	err := tx.First(&m).Error
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return errors.New("无此物资id")
 	}
-	tx.Rollback()
-	return errors.New("操作类型无效")
+
+	//创建record记录
+	//r.BeforeCount = m.Count
+	//r.AfterCount = m.Count + r.CountChange
+	err = tx.Create(r).Error
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return errors.New("添加记录失败")
+	}
+
+	//修改material库存数
+	err = tx.Model(&m).
+		Select("count").
+		Updates(map[string]interface{}{"count": m.Count + r.ReceiveCount}).Error
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
 
 }
 
-//分页&搜索 获取记录列表
-func RecordGetAllByPageAndSearch(key string, page, perPage int) ([]Record, int64, error) {
-
-	//构建参数
-	records := []Record{}
-	regKey := "%" + key + "%"
-	err := GlobalDb.Preload("Place").Preload("User.RealName").Where("name LIKE ? OR model LIKE ?", regKey, regKey).Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&records).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-
-	var count int64 = 0
-	err = GlobalDb.Model(Record{}).Where("name LIKE ? OR model LIKE ?", regKey, regKey).Count(&count).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-
-	return records, count, nil
-
-}
-
-//分页获取本车所有记录列表
-func RecordGetAllByPage(page, perPage int, t string, startT, stopT int, cid uint) ([]Record, int64, error) {
-	//构建参数
-	records := []Record{}
-	materials := []Material{}
-	mids := []uint{}
-	var count int64 = 0
-	typeQuery := ""
-	timeQuery := ""
-
-	//构建操作参数
-	if t != "" {
-		typeQuery = fmt.Sprintf("Type = '%s'", t)
-	}
-
-	if startT != 0 {
-		timeQuery = fmt.Sprintf("create_at >= %d AND create_at <= %d", startT, stopT)
-	}
-
-	//查找符合carid 的所有material
-	err := GlobalDb.
-		Preload("Car").
-		Where("car_id = ? or 0 = ?", cid, cid).
-		Find(&materials).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-	for _, material := range materials {
-		mids = append(mids, material.ID)
-	}
-
-	err = GlobalDb.
-		Preload("Material.Place").
-		Preload("User", func(db *gorm.DB) *gorm.DB {
-			return db.Preload("Car").Omit("password")
-		}).
-		Where(typeQuery).
-		Where(timeQuery).
-		Where("material_id in ?", mids).
-		Offset((page - 1) * perPage).Limit(perPage).
-		Order("id DESC").
-		Find(&records).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-
-	err = GlobalDb.Model(Record{}).
-		Where(typeQuery).
-		Where(timeQuery).
-		Where("material_id in ? ", mids).
-		Count(&count).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-
-	//过滤掉密码
-	//records2 := []Record{}
-	//for _, item := range records {
-	//	item.User.Password = ""
-	//	records2 = append(records2, item)
-	//}
-
-	return records, count, nil
-
-}
-
-//分页获取指定材料所有记录列表
-func RecordGetAllWithMIdByPage(page, perPage int, t string, startT, stopT int, mid uint) ([]Record, int64, error) {
-	//构建参数
-	records := []Record{}
-	//materials := []Material{}
-	//mids := []uint{}
-	var count int64 = 0
-	typeQuery := ""
-	timeQuery := ""
-
-	//构建操作参数
-	if t != "" {
-		typeQuery = fmt.Sprintf("Type = '%s'", t)
-	}
-
-	if startT != 0 {
-		timeQuery = fmt.Sprintf("create_at >= %d AND create_at <= %d", startT, stopT)
-	}
-
-	//查找符合carid 的所有material
-	//err := GlobalDb.
-	//	Preload("Car").
-	//	Where("car_id = ? or 0 = ?", cid, cid).
-	//	Find(&materials).Error
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return []Record{}, 0, err
-	//}
-	//for _, material := range materials {
-	//	mids = append(mids, material.ID)
-	//}
-
-	err := GlobalDb.
-		Preload("Material.Place").
-		Preload("User", func(db *gorm.DB) *gorm.DB {
-			return db.Preload("Car").Omit("password")
-		}).
-		Where(typeQuery).
-		Where(timeQuery).
-		Where("material_id = ? or 0 = ?", mid, mid).
-		Offset((page - 1) * perPage).Limit(perPage).
-		Order("id DESC").
-		Find(&records).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-
-	err = GlobalDb.Model(Record{}).
-		Where(typeQuery).
-		Where(timeQuery).
-		Where("material_id = ? or 0 = ?", mid, mid).
-		Count(&count).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Record{}, 0, err
-	}
-
-	//过滤掉密码
-	//records2 := []Record{}
-	//for _, item := range records {
-	//	item.User.Password = ""
-	//	records2 = append(records2, item)
-	//}
-
-	return records, count, nil
-
-}
-
-// 根据id删除出入库记录
+// RecordDelById 根据id删除出入库记录
 func RecordDelById(id int) error {
-
 	r := Record{ID: uint(id)}
-
 	tx := GlobalDb.Begin()
 
 	//找到该条记录
@@ -285,7 +119,7 @@ func RecordDelById(id int) error {
 	if err != nil {
 		fmt.Println("#1", err)
 		tx.Rollback()
-		return err
+		return errors.New("找不到物资id")
 	}
 
 	// 查询该物资
@@ -295,14 +129,14 @@ func RecordDelById(id int) error {
 	if err != nil {
 		fmt.Println("#2", err)
 		tx.Rollback()
-		return err
+		return errors.New("找不到物资id")
 	}
 
 	//按操作类型 更新材料表
 	switch r.Type {
 	case "send":
 		//修改material库存数
-		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count + r.CountChange}).Error
+		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count + r.SendCount}).Error
 		if err != nil {
 			fmt.Println("#3", err)
 			tx.Rollback()
@@ -310,7 +144,7 @@ func RecordDelById(id int) error {
 		}
 	case "receive":
 		//修改material库存数
-		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count - r.CountChange}).Error
+		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count - r.ReceiveCount}).Error
 		if err != nil {
 			fmt.Println("#4", err)
 			tx.Rollback()
@@ -334,4 +168,163 @@ func RecordDelById(id int) error {
 
 	return nil
 
+}
+
+// RecordGetAllWithCarByPage 根据车号获取消耗记录
+func RecordGetAllWithCarByPage(page, perPage int, t string, startT, stopT int, cid uint) ([]Record, int64, error) {
+	//构建参数
+	records := []Record{}
+	materials := []Material{}
+	mids := []uint{}
+	var count int64 = 0
+
+	//查找符合carid 的所有material
+	if cid != 0 {
+		err := GlobalDb.
+			Preload("Car").
+			Where("car_id = ? or 0 = ?", cid, cid).
+			Find(&materials).Error
+		if err != nil {
+			fmt.Println(err)
+			return []Record{}, 0, err
+		}
+		for _, material := range materials {
+			mids = append(mids, material.ID)
+		}
+	}
+
+	err := GlobalDb.
+		Preload("Material.Place").
+		Preload("Material.Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("type = ? or '' = ?", t, t).
+		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
+		Where("material_id in ? or 0 = ?", mids, cid).
+		Offset((page - 1) * perPage).Limit(perPage).
+		Order("id DESC").
+		Find(&records).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+
+	//查数量
+	err = GlobalDb.
+		Model(&Record{}).
+		Preload("Material.Place").
+		Preload("Material.Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("type = ? or '' = ?", t, t).
+		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
+		Where("material_id in ? or 0 = ?", mids, cid).
+		Offset((page - 1) * perPage).Limit(perPage).
+		Order("id DESC").
+		Count(&count).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+
+	return records, count, nil
+
+}
+
+// RecordGetAllWithMIdByPage 根据材料id获取消耗记录
+func RecordGetAllWithMIdByPage(page, perPage int, t string, startT, stopT int, mid uint) ([]Record, int64, error) {
+	//构建参数
+	records := []Record{}
+	var count int64 = 0
+
+	err := GlobalDb.
+		Preload("Material.Place").
+		Preload("Material.Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("type = ? or '' = ?", t, t).
+		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
+		Where("material_id = ? or 0 = ?", mid, mid).
+		Offset((page - 1) * perPage).Limit(perPage).
+		Order("id DESC").
+		Find(&records).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+
+	//查数量
+	err = GlobalDb.Model(&Record{}).
+		Preload("Material.Place").
+		Preload("Material.Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("type = ? or '' = ?", t, t).
+		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
+		Where("material_id = ? or 0 = ?", mid, mid).
+		Offset((page - 1) * perPage).Limit(perPage).
+		Order("id DESC").
+		Count(&count).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Record{}, 0, err
+	}
+
+	return records, count, nil
+}
+
+//聚合车号获取时间范围内的材料入库、出库记录
+func RecordGetPolyWithCardByPage(page, perPage int, startT, stopT int, cid uint) ([]RecordPoly, int64, error) {
+	recordPoly := []RecordPoly{}
+	materials := []Material{}
+	mids := []uint{}
+	var count int64
+
+	//查找符合carid 的所有material
+	if cid != 0 {
+		err := GlobalDb.
+			Preload("Car").
+			Where("car_id = ? or 0 = ?", cid, cid).
+			Find(&materials).Error
+		if err != nil {
+			return []RecordPoly{}, 0, errors.New("查询失败")
+		}
+		for _, material := range materials {
+			mids = append(mids, material.ID)
+		}
+	}
+
+	err := GlobalDb.Model(&Record{}).
+		Preload("Material.Car").
+		Preload("Material.Place").
+		Where("(records.create_at >= ? AND records.create_at <= ? ) or (0 = ?)", startT, stopT, startT).
+		Where("records.material_id in ? or 0 = ?", mids, cid).
+		Select("material_id, SUM( send_count ) as send ,SUM( receive_count ) as receive").
+		Joins("JOIN materials ON materials.id = material_id ").
+		Group("material_id").
+		Find(&recordPoly).Error
+	if err != nil {
+		logs.Error(err)
+		return nil, 0, errors.New("查询失败")
+	}
+	//查数量
+	err = GlobalDb.Model(&Record{}).
+		Preload("Material.Car").
+		Preload("Material.Place").
+		Where("(records.create_at >= ? AND records.create_at <= ? ) or (0 = ?)", startT, stopT, startT).
+		Where("records.material_id in ? or 0 = ?", mids, cid).
+		Select("material_id, SUM( send_count ) as send ,SUM( receive_count ) as receive").
+		Joins("JOIN materials ON materials.id = material_id ").
+		Group("material_id").
+		Count(&count).Error
+	if err != nil {
+		logs.Error(err)
+		return nil, 0, errors.New("查询失败")
+	}
+
+	return recordPoly, count, nil
 }

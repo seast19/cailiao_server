@@ -28,7 +28,6 @@ func MaterialAdd(c *gin.Context) {
 		PrepareCount int `json:"prepare_count"` //常备数量
 		WarnCount    int `json:"warn_count"`    //警报数量
 
-		//CarId uint `json:"car_id"` //所属车id
 		Marks string `json:"marks"` //备注
 	}{}
 
@@ -225,45 +224,6 @@ func MaterialAddAll(c *gin.Context) {
 		"msg":  "上传成功",
 	})
 }
-
-//分页获取所有材料
-//func MaterialGetAllByPage(c *gin.Context) {
-//	data := struct {
-//		Page    int `json:"page" form:"page"`
-//		PerPage int `json:"per_page" form:"per_page"`
-//		PlaceID int `json:"place_id" form:"place_id"`
-//	}{}
-//
-//	err := c.BindQuery(&data)
-//	if err != nil {
-//		fmt.Println(err)
-//		c.JSON(http.StatusBadRequest, gin.H{
-//			"code": 4001,
-//			"msg":  "参数错误",
-//		})
-//		return
-//	}
-//
-//	//	查询
-//	materials, count, err := models.MaterialGetByPage(data.Page, data.PerPage, 0)
-//	if err != nil {
-//		c.JSON(http.StatusInternalServerError, gin.H{
-//			"code": 5000,
-//			"msg":  err.Error(),
-//		})
-//		return
-//	}
-//
-//	c.JSON(http.StatusOK, gin.H{
-//		"code": 2000,
-//		"msg":  "ok",
-//		"data": gin.H{
-//			"materials": materials,
-//			"count":     count,
-//			"page":      data.Page,
-//		},
-//	})
-//}
 
 // MaterialSearch 搜索材料
 func MaterialSearch(c *gin.Context) {
@@ -474,7 +434,6 @@ func MaterialDownload(c *gin.Context) {
 		return
 	}
 
-	//fmt.Println(data)
 	materials, err := models.MaterialDownloadByKey(data.Key, data.Car, data.Place, data.Page, data.PerPage)
 	if err != nil {
 		fmt.Println(err)
@@ -499,9 +458,6 @@ func MaterialDownload(c *gin.Context) {
 	//fmt.Println(materials)
 	//循环填入数据
 	for i, material := range materials {
-		//if i <= 2 {
-		//	continue
-		//}
 		//	按行赋值
 		axis := fmt.Sprintf("A%d", i+4)
 		//fmt.Println(axis)
@@ -518,7 +474,7 @@ func MaterialDownload(c *gin.Context) {
 			material.PrepareCount,
 			material.WarnCount,
 			material.User.RealName,
-			material.User.Car.Car,
+			material.Car.Car,
 			material.Marks,
 		})
 		if err != nil {
@@ -527,7 +483,7 @@ func MaterialDownload(c *gin.Context) {
 		}
 	}
 
-	filename := fmt.Sprintf("statics/%s材料清单-%d.xlsx", materials[0].User.Car.Car, time.Now().Unix())
+	filename := fmt.Sprintf("statics/%s材料清单-%d.xlsx", materials[0].Car.Car, time.Now().Unix())
 	err = f.SaveAs(filename)
 	if err != nil {
 		fmt.Println(err)

@@ -91,31 +91,14 @@ func MaterialEditByID(material Material) error {
 	return nil
 }
 
-//分页获取材料
-//func MaterialGetByPage(page, perPage, placeID int) ([]Material, int64, error) {
-//
-//	material := []Material{}
-//	var count int64 = 0
-//	err := GlobalDb.Preload("Place").Where(&Material{PlaceID: uint(placeID)}).Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&material).Error
-//	if err != nil {
-//		fmt.Println(err)
-//		return nil, 0, errors.New("查询失败1")
-//	}
-//
-//	err = GlobalDb.Model(Material{}).Where(&Material{PlaceID: uint(placeID)}).Count(&count).Error
-//	if err != nil {
-//		fmt.Println(err)
-//		return nil, 0, errors.New("查询失败3")
-//	}
-//
-//	return material, count, nil
-//}
-
 //根据id获取材料
 func MaterialGetById(id int) (Material, error) {
 
 	material := Material{}
-	err := GlobalDb.Where(&Material{ID: uint(id)}).First(&material).Error
+	err := GlobalDb.
+		Preload("Car").
+		Preload("Place").
+		Where(&Material{ID: uint(id)}).First(&material).Error
 	if err != nil {
 		return Material{}, err
 	}
@@ -127,33 +110,25 @@ func MaterialGetById(id int) (Material, error) {
 func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material, int64, error) {
 
 	var materials []Material
-	//users := []User{}
-	//userId := []uint{}
+
 	var count int64 = 0
 
-	//存在car参数则查找car对应的user ID
-	//if car > 0 {
-	//	err := GlobalDb.Preload("Car").
-	//		Where("car_id = ? or 0 = ?", car, car).
-	//		Find(&users).Error
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		return []Material{}, 0, err
-	//	}
-	//	for _, user := range users {
-	//		userId = append(userId, user.ID)
-	//	}
-	//}
 	//查询符合条件的材料
 	regKey := "%" + key + "%"
-	err := GlobalDb.Preload("Place").Preload("User", func(db *gorm.DB) *gorm.DB {
-		return db.Preload("Car").Omit("password")
-	}).
+	err := GlobalDb.
+		Preload("Place").
+		Preload("Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
 		Where("place_id = ? or 0 = ?", place, place).
 		Where("car_id = ? or 0 = ?", car, car).
 		Where("name LIKE ? OR model LIKE ?", regKey, regKey).
+		Joins("join places on places.id = materials.place_id").
+		Order("places.position").
+		Order("floor").
+		Order("location").
 		Offset((page - 1) * perPage).Limit(perPage).
-		Order("id DESC").
 		Find(&materials).Error
 	if err != nil {
 		fmt.Println(err)
@@ -178,32 +153,38 @@ func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material,
 
 // MaterialDownloadByKey 下载材料清单
 //下载时必须选择车号
-func MaterialDownloadByKey(key string, car, place, page, perPage int) ([]Material, error) {
+func MaterialDownloadByKey(key string, carID, placeID, page, perPage int) ([]Material, error) {
 	var materials []Material
-	users := []User{}
-	userId := []uint{}
+	//users := []User{}
+	//userId := []uint{}
 
-	if car <= 0 {
+	if carID <= 0 {
 		return nil, errors.New("下载材料清单必须选择车号")
 	}
 
 	//存在car参数则查找car对应的user ID
-	err := GlobalDb.Preload("Car").Where("car_id = ? or 0 = ?", car, car).Find(&users).Error
-	if err != nil {
-		fmt.Println(err)
-		return []Material{}, err
-	}
-	for _, user := range users {
-		userId = append(userId, user.ID)
-	}
+	//err := GlobalDb.
+	//	Preload("Car").
+	//	Where("car_id = ? or 0 = ?", carID, carID).
+	//	Find(&users).Error
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return []Material{}, err
+	//}
+	//for _, user := range users {
+	//	userId = append(userId, user.ID)
+	//}
 
 	//查询符合条件的材料
 	regKey := "%" + key + "%"
-	err = GlobalDb.Preload("Place").Preload("User", func(db *gorm.DB) *gorm.DB {
-		return db.Preload("Car").Omit("password")
-	}).
-		Where("place_id = ? or 0 = ?", place, place).
-		Where("user_id in ? or 0 = ?", userId, car).
+	err := GlobalDb.
+		Preload("Place").
+		Preload("Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("place_id = ? or 0 = ?", placeID, placeID).
+		Where("car_id = ? or 0 = ?", carID, carID).
 		Where("name LIKE ? OR model LIKE ?", regKey, regKey).
 		Order("place_id").
 		Order("floor").

@@ -73,6 +73,7 @@ func DefineRouter(r *gin.Engine) {
 		v1.GET("/record", Permission("editor"), controllers.RecordGetAllByPageAndSearch)        //搜索记录
 		v1.GET("/record/id/:id", Permission("editor"), controllers.RecordGetAllByPageAndSearch) //搜索记录
 		v1.DELETE("/record/id/:id", Permission("editor"), controllers.RecordDelById)            //删除记录记录
+		v1.GET("/record/poly", Permission("editor"), controllers.RecordGetPolyWithCardByPage)   //聚合获取数据
 
 	}
 

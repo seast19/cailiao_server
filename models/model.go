@@ -63,7 +63,7 @@ type Material struct {
 
 	Place   Place //关联货架  tips:一定要不保存关联，否则原始数据会被覆盖
 	PlaceID uint
-	
+
 	Floor    int //层
 	Location int //位
 
@@ -87,16 +87,43 @@ type Record struct {
 	User   User //创建用户
 	UserID uint
 
-	//Car   Car //关联车号，以车号来区分  tips:一定要不保存关联，否则原始数据会被覆盖
-	//CarID uint
+	CreateAt int64 //创建时间
+	UpdateAt int64
+	Type     string //记录类型 "receive":领料  "send":发料
 
-	CreateAt    int64 //创建时间
-	UpdateAt    int64
-	Type        string //记录类型 "receive":领料  "send":发料
-	CountChange int    //变动数量 如1  5
-	BeforeCount int    //变动前数量
-	AfterCount  int    //变动后数量
-	Marks       string `gorm:"size:255"` //备注
+	SendCount    int
+	ReceiveCount int
+
+	//CountChange  int    //变动数量 如1  5
+	//BeforeCount  int    //变动前数量
+	//AfterCount   int    //变动后数量
+	Marks string `gorm:"size:255"` //备注
+}
+
+//记录聚合
+type RecordPoly struct {
+	//Name       string   `json:"name"`
+	Material   Material
+	MaterialID uint `json:"material_id"`
+
+	//User   User //创建用户
+	//UserID uint
+
+	//Type string `json:"type"`
+
+	//Car   Car  //关联车号，以车号来区分  tips:一定要不保存关联，否则原始数据会被覆盖
+	//CarID uint `json:"car_id"`
+
+	Send    int `json:"send"`
+	Receive int `json:"receive"`
+
+	//CreateAt    int64 //创建时间
+	//UpdateAt    int64
+	//Type        string //记录类型 "receive":领料  "send":发料
+	//CountChange int    //变动数量 如1  5
+	//BeforeCount int    //变动前数量
+	//AfterCount  int    //变动后数量
+	Marks string `gorm:"size:255"` //备注
 }
 
 //初始化
