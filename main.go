@@ -22,5 +22,5 @@ func main() {
 
 	logs.Info("系统启动成功")
 
-	r.Run(":7090")
+	_ = r.Run(":7090")
 }

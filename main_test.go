@@ -15,10 +15,6 @@ func TestJwt(t *testing.T) {
 // 	utils.ParseJWT("sds")
 // }
 
-func TestAaa(t *testing.T) {
-	models.RecordGetPolyWithCardByPage(1, 8, "send", 0, 0, 1)
-}
-
 func TestAddUser(t *testing.T) {
 	user := models.User{
 		Phone:    "11111111111",
@@ -43,7 +39,7 @@ func TestIndexOf(t *testing.T) {
 		"b",
 		"c",
 	}
-	aa := utils.IndexOfString(roles, "d")
+	aa := utils.IndexOfStringList(roles, "d")
 	fmt.Println(aa)
 }
 

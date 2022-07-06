@@ -6,15 +6,15 @@ import (
 	"strconv"
 )
 
-// Md5 生成MD5
+// Md5 使用string生成MD5
 func Md5(s string) string {
 	data := []byte(s)
 	r := fmt.Sprintf("%x", md5.Sum(data))
 	return r
 }
 
-// IndexOfString 判断某元素是否在数组中
-func IndexOfString(arr []string, target string) int {
+// IndexOfStringList 判断某元素是否在[]string数组中
+func IndexOfStringList(arr []string, target string) int {
 	for index, value := range arr {
 		if value == target {
 			return index
@@ -23,14 +23,13 @@ func IndexOfString(arr []string, target string) int {
 	return -1
 }
 
-// ValidateRole 校验用户角色是否合法
+// ValidateRole 校验用户角色字符串是否合法，合法参数[user editor admin]
 func ValidateRole(s string) bool {
 	roles := []string{
 		"user",
 		"editor",
 		"admin",
 	}
-
 	for _, value := range roles {
 		if value == s {
 			return true
@@ -39,8 +38,8 @@ func ValidateRole(s string) bool {
 	return false
 }
 
-// String2Number 将字符转为数字int，默认为0
-func String2Number(s string) int {
+// StringToInt 将字符转为数字int，默认为0
+func StringToInt(s string) int {
 	n, err := strconv.Atoi(s)
 	if err != nil {
 		return 0

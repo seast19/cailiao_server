@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-//设置跨域头
+// 设置跨域头
 func cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
@@ -24,9 +24,10 @@ func cors() gin.HandlerFunc {
 
 // DefineRouter 自定义路由
 func DefineRouter(r *gin.Engine) {
-	//跨域
+	//支持跨域
 	r.Use(cors())
 
+	//v1路由组
 	v1 := r.Group("/v1")
 	{
 		v1.GET("/", Permission("user"), controllers.Hellow)
@@ -69,11 +70,11 @@ func DefineRouter(r *gin.Engine) {
 		v1.GET("/material/download", Permission("editor"), controllers.MaterialDownload)    //下载材料清单
 
 		//	出入库记录接口
-		v1.POST("/record", Permission("editor"), controllers.RecordAdd)                         //添加记录
-		v1.GET("/record", Permission("editor"), controllers.RecordGetAllByPageAndSearch)        //搜索记录
-		v1.GET("/record/id/:id", Permission("editor"), controllers.RecordGetAllByPageAndSearch) //搜索记录
-		v1.DELETE("/record/id/:id", Permission("editor"), controllers.RecordDelById)            //删除记录记录
-		v1.GET("/record/poly", Permission("editor"), controllers.RecordGetPolyWithCardByPage)   //聚合获取数据
+		v1.POST("/record", Permission("user"), controllers.RecordAdd)                         //添加记录
+		v1.GET("/record", Permission("user"), controllers.RecordGetAllByPageAndSearch)        //搜索所有记录
+		v1.GET("/record/id/:id", Permission("user"), controllers.RecordGetAllByPageAndSearch) //搜索单条记录
+		v1.DELETE("/record/id/:id", Permission("editor"), controllers.RecordDelById)          //删除记录记录
+		v1.GET("/record/poly", Permission("editor"), controllers.RecordGetPolyWithCardByPage) //聚合获取数据
 
 	}
 

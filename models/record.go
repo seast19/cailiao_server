@@ -8,19 +8,19 @@ import (
 	"time"
 )
 
-// RecordAdd 添加出库记录
+// RecordAddSend RecordAdd 添加出库记录
 func RecordAddSend(r *Record) error {
-
 	// 构建完整数据
 	t := time.Now().UnixNano() / 1e6
 	r.CreateAt = t
 	r.UpdateAt = t
 
+	//启用事物
 	tx := GlobalDb.Begin()
-	//发料
+
+	//查找该物资
 	m := Material{}
 	m.ID = r.MaterialID
-	//查找该物资
 	err := tx.First(&m).Error
 	if err != nil {
 		logs.Error(err)
@@ -40,7 +40,7 @@ func RecordAddSend(r *Record) error {
 	}
 
 	//创建record记录
-	r.SendCount = r.SendCount
+	//r.SendCount = r.SendCount
 	//r.BeforeCount = m.Count
 	//r.AfterCount = m.Count - r.CountChange
 	err = tx.Create(r).Error
@@ -55,41 +55,39 @@ func RecordAddSend(r *Record) error {
 		Select("count").
 		Updates(map[string]interface{}{"count": m.Count - r.SendCount}).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		tx.Rollback()
-		return err
+		return errors.New("修改材料数量失败")
 	}
 
 	tx.Commit()
 	return nil
 }
 
-// RecordAdd 添加入库记录
+// RecordAddReceive RecordAdd 添加入库记录
 func RecordAddReceive(r *Record) error {
-
 	// 构建完整数据
 	t := time.Now().UnixNano() / 1e6
 	r.CreateAt = t
 	r.UpdateAt = t
-
-	tx := GlobalDb.Begin()
-
 	m := Material{}
 	m.ID = r.MaterialID
+
+	//开启事物
+	tx := GlobalDb.Begin()
+
 	//查找该物资
 	err := tx.First(&m).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		tx.Rollback()
 		return errors.New("无此物资id")
 	}
 
 	//创建record记录
-	//r.BeforeCount = m.Count
-	//r.AfterCount = m.Count + r.CountChange
 	err = tx.Create(r).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		tx.Rollback()
 		return errors.New("添加记录失败")
 	}
@@ -99,9 +97,9 @@ func RecordAddReceive(r *Record) error {
 		Select("count").
 		Updates(map[string]interface{}{"count": m.Count + r.ReceiveCount}).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		tx.Rollback()
-		return err
+		return errors.New("添加记录失败")
 	}
 
 	tx.Commit()
@@ -112,14 +110,15 @@ func RecordAddReceive(r *Record) error {
 // RecordDelById 根据id删除出入库记录
 func RecordDelById(id int) error {
 	r := Record{ID: uint(id)}
+
 	tx := GlobalDb.Begin()
 
 	//找到该条记录
 	err := tx.First(&r).Error
 	if err != nil {
-		fmt.Println("#1", err)
+		logs.Error(err)
 		tx.Rollback()
-		return errors.New("找不到物资id")
+		return errors.New("找不到记录id")
 	}
 
 	// 查询该物资
@@ -127,7 +126,7 @@ func RecordDelById(id int) error {
 	m.ID = r.MaterialID
 	err = tx.First(&m).Error
 	if err != nil {
-		fmt.Println("#2", err)
+		logs.Error(err)
 		tx.Rollback()
 		return errors.New("找不到物资id")
 	}
@@ -138,17 +137,17 @@ func RecordDelById(id int) error {
 		//修改material库存数
 		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count + r.SendCount}).Error
 		if err != nil {
-			fmt.Println("#3", err)
+			logs.Error("#3", err)
 			tx.Rollback()
-			return err
+			return errors.New("操作失败")
 		}
 	case "receive":
 		//修改material库存数
 		err = tx.Model(&m).Select("count").Updates(map[string]interface{}{"count": m.Count - r.ReceiveCount}).Error
 		if err != nil {
-			fmt.Println("#4", err)
+			logs.Error("#4", err)
 			tx.Rollback()
-			return err
+			return errors.New("操作失败")
 		}
 	default:
 		tx.Rollback()
@@ -159,7 +158,7 @@ func RecordDelById(id int) error {
 	//删除该记录
 	err = tx.Delete(&r).Error
 	if err != nil {
-		fmt.Println("#5", err)
+		logs.Error("#5", err)
 		tx.Rollback()
 		return err
 	}

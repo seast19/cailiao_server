@@ -6,14 +6,12 @@ import (
 	"net/http"
 )
 
-//admin 权限
-func Permission(targetRole string) gin.HandlerFunc {
+// Permission 路由权限拦截器，会话角色权限大于等于设置角色才能访问
+func Permission(setRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取jwt
-		jwt := c.GetHeader("jwt")
-
 		//解析jwt
-		phone, role, err := utils.ParseJWT(jwt)
+		jwt := c.GetHeader("jwt")
+		_, userRole, err := utils.ParseJWT(jwt)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusOK, gin.H{
 				"code": 4030,
@@ -22,11 +20,10 @@ func Permission(targetRole string) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("phone", phone)
-
-		switch targetRole {
+		//筛选角色
+		switch setRole {
 		case "user":
-			if role == "user" || role == "editor" || role == "admin" {
+			if userRole == "user" || userRole == "editor" || userRole == "admin" {
 				c.Next()
 			} else {
 				c.AbortWithStatusJSON(http.StatusOK, gin.H{
@@ -34,29 +31,25 @@ func Permission(targetRole string) gin.HandlerFunc {
 					"msg":  "用户权限不足",
 				})
 			}
-
 		case "editor":
-			if role == "editor" || role == "admin" {
+			if userRole == "editor" || userRole == "admin" {
 				c.Next()
 			} else {
-				//c.AbortWithStatus(http.StatusForbidden)
 				c.AbortWithStatusJSON(http.StatusOK, gin.H{
 					"code": 4030,
 					"msg":  "用户权限不足",
 				})
 			}
 		case "admin":
-			if role == "admin" {
+			if userRole == "admin" {
 				c.Next()
 			} else {
-				//c.AbortWithStatus(http.StatusForbidden)
 				c.AbortWithStatusJSON(http.StatusOK, gin.H{
 					"code": 4030,
 					"msg":  "用户权限不足",
 				})
 			}
 		default:
-			//c.AbortWithStatus(http.StatusForbidden)
 			c.AbortWithStatusJSON(http.StatusOK, gin.H{
 				"code": 4030,
 				"msg":  "用户权限不足",
