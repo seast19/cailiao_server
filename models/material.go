@@ -108,9 +108,7 @@ func MaterialGetById(id int) (Material, error) {
 
 //搜索材料
 func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material, int64, error) {
-
 	var materials []Material
-
 	var count int64 = 0
 
 	//查询符合条件的材料
@@ -151,29 +149,57 @@ func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material,
 	return materials, count, nil
 }
 
+//搜索材料
+func MaterialWarnByCar(car, place, page, perPage int) ([]Material, int64, error) {
+	var materials []Material
+	var count int64 = 0
+
+	//查询符合条件的材料
+	//regKey := "%" + key + "%"
+	err := GlobalDb.
+		Preload("Place").
+		Preload("Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("place_id = ? or 0 = ?", place, place).
+		Where("car_id = ? or 0 = ?", car, car).
+		Where("count < prepare_count").
+		//Where("name LIKE ? OR model LIKE ?", regKey, regKey).
+		Joins("join places on places.id = materials.place_id").
+		Order("places.position").
+		Order("floor").
+		Order("location").
+		Offset((page - 1) * perPage).Limit(perPage).
+		Find(&materials).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Material{}, 0, err
+	}
+
+	//查询数量
+	err = GlobalDb.Model(&Material{}).Preload("Place").Preload("User", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("Car").Omit("password")
+	}).
+		Where("place_id = ? or 0 = ?", place, place).
+		Where("car_id = ? or 0 = ?", car, car).
+		Where("count < prepare_count").
+		Count(&count).Error
+	if err != nil {
+		fmt.Println(err)
+		return []Material{}, 0, err
+	}
+
+	return materials, count, nil
+}
+
 // MaterialDownloadByKey 下载材料清单
 //下载时必须选择车号
 func MaterialDownloadByKey(key string, carID, placeID, page, perPage int) ([]Material, error) {
 	var materials []Material
-	//users := []User{}
-	//userId := []uint{}
-
 	if carID <= 0 {
 		return nil, errors.New("下载材料清单必须选择车号")
 	}
-
-	//存在car参数则查找car对应的user ID
-	//err := GlobalDb.
-	//	Preload("Car").
-	//	Where("car_id = ? or 0 = ?", carID, carID).
-	//	Find(&users).Error
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return []Material{}, err
-	//}
-	//for _, user := range users {
-	//	userId = append(userId, user.ID)
-	//}
 
 	//查询符合条件的材料
 	regKey := "%" + key + "%"
@@ -192,6 +218,37 @@ func MaterialDownloadByKey(key string, carID, placeID, page, perPage int) ([]Mat
 		Find(&materials).Error
 	if err != nil {
 		fmt.Println(err)
+		return []Material{}, err
+	}
+
+	return materials, nil
+}
+
+// MaterialDownloadByKey 下载材料清单
+//下载时必须选择车号
+func MaterialDownloadWarnByCar(carID, placeID, page, perPage int) ([]Material, error) {
+	var materials []Material
+	if carID <= 0 {
+		return nil, errors.New("下载材料清单必须选择车号")
+	}
+
+	//查询符合条件的材料
+	//regKey := "%" + key + "%"
+	err := GlobalDb.
+		Preload("Place").
+		Preload("Car").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Car").Omit("password")
+		}).
+		Where("place_id = ? or 0 = ?", placeID, placeID).
+		Where("car_id = ? or 0 = ?", carID, carID).
+		Where("count < prepare_count").
+		Order("place_id").
+		Order("floor").
+		Order("location").
+		Find(&materials).Error
+	if err != nil {
+		logs.Error(err)
 		return []Material{}, err
 	}
 

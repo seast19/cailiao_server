@@ -52,12 +52,12 @@ func DefineRouter(r *gin.Engine) {
 		v1.POST("/places", Permission("editor"), controllers.PlaceAdd)           //添加某个货架
 
 		// 车号接口
-		v1.GET("/car", Permission("admin"), controllers.CarGetAllByPage)   //分页获取车号位置
-		v1.GET("/carall", Permission("editor"), controllers.CarGetAll)     //获取所有车号位置
-		v1.DELETE("/car/:id", Permission("admin"), controllers.CarDelById) //删除某个车号
-		v1.GET("/car/:id", Permission("admin"), controllers.CarGetOneById) //获取某个车号
-		v1.PUT("/car/:id", Permission("admin"), controllers.CarUpdateById) //更新某个车号
-		v1.POST("/car", Permission("admin"), controllers.CarAdd)           //添加某个车号
+		v1.GET("/car", Permission("admin"), controllers.CarGetAllByPage)    //分页获取车号位置
+		v1.GET("/carall", Permission("editor"), controllers.CarGetAll)      //获取所有车号位置
+		v1.DELETE("/car/:id", Permission("admin"), controllers.CarDelById)  //删除某个车号
+		v1.GET("/car/:id", Permission("admin"), controllers.CarGetOneById)  //获取某个车号
+		v1.POST("/car/:id", Permission("admin"), controllers.CarUpdateById) //更新某个车号
+		v1.POST("/car", Permission("admin"), controllers.CarAdd)            //添加某个车号
 
 		//	材料接口
 		//v1.GET("/material", Permission("editor"), controllers.MaterialGetAllByPage)         //获取材料分页
@@ -66,8 +66,10 @@ func DefineRouter(r *gin.Engine) {
 		v1.GET("/material/id/:id", Permission("editor"), controllers.MaterialGetOneById)    //获取单个材料
 		v1.PUT("/material/id/:id", Permission("editor"), controllers.MaterialUpdateOneById) //更新单个材料
 		v1.GET("/material/s", Permission("editor"), controllers.MaterialSearch)             //搜索材料
+		v1.GET("/material/warn", Permission("editor"), controllers.MaterialWarn)            //获取达到常备数量以下的材料
 		v1.POST("/material/all", Permission("editor"), controllers.MaterialAddAll)          //批量添加材料
 		v1.GET("/material/download", Permission("editor"), controllers.MaterialDownload)    //下载材料清单
+		v1.GET("/material/dl/warn", Permission("editor"), controllers.MaterialDownloadWarn) //下载备料清单
 
 		//	出入库记录接口
 		v1.POST("/record", Permission("user"), controllers.RecordAdd)                         //添加记录

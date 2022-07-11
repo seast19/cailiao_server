@@ -205,8 +205,7 @@ func CarUpdateById(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 2000,
-
-		"msg": "ok",
+		"msg":  "修改成功",
 	})
 
 }

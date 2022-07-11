@@ -266,6 +266,47 @@ func MaterialSearch(c *gin.Context) {
 	})
 }
 
+// MaterialWarn  获取达到常备数量以下的材料
+func MaterialWarn(c *gin.Context) {
+	data := struct {
+		Page    int `json:"page" form:"page"`         //页码
+		PerPage int `json:"per_page" form:"per_page"` //每页数量
+		//Key     string `json:"key" form:"key"`           // 搜索关键字
+		Car   int `json:"car" form:"car"`     // 选择车号
+		Place int `json:"place" form:"place"` // 选择位置
+
+	}{}
+
+	err := c.BindQuery(&data)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4001,
+			"msg":  "参数错误",
+		})
+		return
+	}
+
+	//fmt.Println(data)
+	materials, count, err := models.MaterialWarnByCar(data.Car, data.Place, data.Page, data.PerPage)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4001,
+			"msg":  "参数错误",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":  2000,
+		"msg":   "ok",
+		"data":  materials,
+		"count": count,
+		"page":  data.Page,
+	})
+}
+
 // 删除单个材料
 func MaterialDelOneByID(c *gin.Context) {
 	id := c.Param("id")
@@ -413,7 +454,7 @@ func MaterialUpdateOneById(c *gin.Context) {
 
 }
 
-//下载材料清单
+// MaterialDownload 下载材料清单
 func MaterialDownload(c *gin.Context) {
 	data := struct {
 		Page    int    `json:"page" form:"page"`         //页码
@@ -484,6 +525,90 @@ func MaterialDownload(c *gin.Context) {
 	}
 
 	filename := fmt.Sprintf("statics/%s材料清单-%d.xlsx", materials[0].Car.Car, time.Now().Unix())
+	err = f.SaveAs(filename)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"url":  filename,
+		"msg":  "下载成功",
+	})
+
+}
+
+// MaterialDownloadWarn 下载材料清单
+func MaterialDownloadWarn(c *gin.Context) {
+	data := struct {
+		Page    int `json:"page" form:"page"`         //页码
+		PerPage int `json:"per_page" form:"per_page"` //每页数量
+		//Key     string `json:"key" form:"key"`           // 搜索关键字
+		Car   int `json:"car" form:"car"`     // 选择车号
+		Place int `json:"place" form:"place"` // 选择位置
+
+	}{}
+
+	err := c.BindQuery(&data)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4001,
+			"msg":  "参数错误",
+		})
+		return
+	}
+
+	materials, err := models.MaterialDownloadWarnByCar(data.Car, data.Place, data.Page, data.PerPage)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusOK, gin.H{
+			"code": 4001,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	//	构建xlsx文件
+	f, err := excelize.OpenFile("assets/下载材料清单模板.xlsx")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	//fmt.Println(materials)
+	//循环填入数据
+	for i, material := range materials {
+		//	按行赋值
+		axis := fmt.Sprintf("A%d", i+4)
+		//fmt.Println(axis)
+		err := f.SetSheetRow("Sheet1", axis, &[]interface{}{
+			material.ID,
+			material.Name,
+			material.Model,
+			material.NickName,
+			material.Unit,
+			material.Place.Position,
+			material.Floor,
+			material.Location,
+			material.Count,
+			material.PrepareCount,
+			material.WarnCount,
+			material.User.RealName,
+			material.Car.Car,
+			material.Marks,
+		})
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+	}
+
+	filename := fmt.Sprintf("statics/%s备料清单-%d.xlsx", materials[0].Car.Car, time.Now().Unix())
 	err = f.SaveAs(filename)
 	if err != nil {
 		fmt.Println(err)
