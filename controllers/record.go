@@ -133,7 +133,7 @@ func RecordGetAllByPageAndSearch(c *gin.Context) {
 		Type       string `json:"type" form:"type"`
 		StartTime  int    `json:"start_time" form:"start_time"`
 		StopTime   int    `json:"stop_time" form:"stop_time"` //ms
-		MaterialID uint   `json:"id" form:"id"`               //待id则只查看该材料id的记录
+		MaterialID uint   `json:"mid" form:"mid"`             //待id则只查看该材料id的记录
 		CarID      uint   `json:"car_id" form:"car_id"`       //含carid则查看该车id
 	}{}
 
