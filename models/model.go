@@ -37,8 +37,11 @@ type User struct {
 type Place struct {
 	//gorm.Model
 	ID       uint   `gorm:"primary_key"`
-	Position string `gorm:"size:255;unique;not null"`
+	Position string `gorm:"size:255;not null"`
 	Remarks  string `gorm:"size:255"`
+
+	Car   Car //关联车号，以车号来区分  tips:一定要不保存关联，否则原始数据会被覆盖
+	CarID uint
 }
 
 // Car 车号 DM05等

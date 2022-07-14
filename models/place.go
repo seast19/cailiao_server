@@ -8,30 +8,16 @@ import (
 
 // 添加位置
 func PlaceAdd(place *Place) error {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return err
-	//}
-	//defer GLOBAL_DB.Close()
-
 	err := GlobalDb.Create(place).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return errors.New("该位置已存在")
 	}
-
 	return nil
-
 }
 
 //根据id获取货架
 func PlaceGetById(id int) (Place, error) {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return Place{}, err
-	//}
-	//defer GLOBAL_DB.Close()
-
 	place := Place{}
 	err := GlobalDb.Where(&Place{ID: uint(id)}).First(&place).Error
 	if err != nil {
@@ -43,14 +29,9 @@ func PlaceGetById(id int) (Place, error) {
 
 //修改位置
 func PlaceEditByID(place Place) error {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return err
-	//}
-	//defer GLOBAL_DB.Close()
-
 	err := GlobalDb.Model(&Place{ID: place.ID}).Updates(
 		map[string]interface{}{
+			"CarID":    place.CarID,
 			"Position": place.Position,
 			"Remarks":  place.Remarks,
 		}).Error
@@ -90,15 +71,14 @@ func PlaceDel(id int) error {
 }
 
 //获取所有位置
-func PlaceAll() ([]Place, error) {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer GLOBAL_DB.Close()
+func PlaceAll(carId uint) ([]Place, error) {
 
 	places := []Place{}
-	err := GlobalDb.Order("id DESC").Find(&places).Error
+	err := GlobalDb.
+		Preload("Car").
+		Where("car_id = ?", carId).
+		Order("id DESC").
+		Find(&places).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, errors.New("查询失败")
@@ -108,22 +88,24 @@ func PlaceAll() ([]Place, error) {
 }
 
 //获取分页位置
-func PlaceAllGetPlaceByPage(page, perPage int) ([]Place, int64, error) {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return nil, 0, err
-	//}
-	//defer GLOBAL_DB.Close()
-
+func PlaceAllGetPlaceByPage(carId uint, page, perPage int) ([]Place, int64, error) {
 	places := []Place{}
 	var count int64 = 0
-	err := GlobalDb.Offset((page - 1) * perPage).Limit(perPage).Order("id DESC").Find(&places).Error
+	err := GlobalDb.
+		Preload("Car").
+		Where("car_id = ? or 0 = ?", carId, carId).
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Order("id DESC").
+		Find(&places).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, errors.New("查询失败")
 	}
 
-	err = GlobalDb.Model(Place{}).Count(&count).Error
+	err = GlobalDb.
+		Model(Place{}).
+		Count(&count).Error
 	if err != nil {
 		fmt.Println(err)
 		return nil, 0, errors.New("查询失败")

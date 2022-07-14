@@ -120,7 +120,7 @@ func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material,
 			return db.Preload("Car").Omit("password")
 		}).
 		Where("place_id = ? or 0 = ?", place, place).
-		Where("car_id = ? or 0 = ?", car, car).
+		Where("materials.car_id = ? or 0 = ?", car, car).
 		Where("name LIKE ? OR model LIKE ?", regKey, regKey).
 		Joins("join places on places.id = materials.place_id").
 		Order("places.position").
@@ -163,7 +163,7 @@ func MaterialWarnByCar(car, place, page, perPage int) ([]Material, int64, error)
 			return db.Preload("Car").Omit("password")
 		}).
 		Where("place_id = ? or 0 = ?", place, place).
-		Where("car_id = ? or 0 = ?", car, car).
+		Where("materials.car_id = ? or 0 = ?", car, car).
 		Where("count < prepare_count").
 		//Where("name LIKE ? OR model LIKE ?", regKey, regKey).
 		Joins("join places on places.id = materials.place_id").
