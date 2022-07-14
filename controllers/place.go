@@ -86,19 +86,19 @@ func PlaceGetPlaceByPage(c *gin.Context) {
 }
 
 //获取所有货架
-func PlaceGetAll(c*gin.Context)  {
- places,err:=	models.PlaceAll()
- if err!=nil{
- 	c.JSON(http.StatusBadRequest,gin.H{
-		"code": 4001,
-		"msg":  "参数错误",
-	})
-	 return
- }
+func PlaceGetAll(c *gin.Context) {
+	places, err := models.PlaceAll()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4001,
+			"msg":  "参数错误",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 2000,
-		"data":places,
+		"data": places,
 		"msg":  "ok",
 	})
 }
@@ -159,7 +159,7 @@ func PlaceGetOneById(c *gin.Context) {
 }
 
 //更新某个货架
-func PlaceUpdateById(c *gin.Context)  {
+func PlaceUpdateById(c *gin.Context) {
 	idStr := c.Param("id")
 
 	idNum, err := strconv.Atoi(idStr)
@@ -178,7 +178,7 @@ func PlaceUpdateById(c *gin.Context)  {
 
 	err = c.BindJSON(&data)
 
-	fmt.Println(data)
+	//fmt.Println(data)
 
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -189,13 +189,13 @@ func PlaceUpdateById(c *gin.Context)  {
 	}
 
 	place := models.Place{
-		ID: uint(idNum),
+		ID:       uint(idNum),
 		Position: data.Position,
-		Remarks: data.Remarks,
+		Remarks:  data.Remarks,
 	}
 
-	err=models.PlaceEditByID(place)
-	if err!=nil{
+	err = models.PlaceEditByID(place)
+	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
 			"msg":  err.Error(),
@@ -205,8 +205,7 @@ func PlaceUpdateById(c *gin.Context)  {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 2000,
-
-		"msg":  "ok",
+		"msg":  "修改成功",
 	})
 
 }

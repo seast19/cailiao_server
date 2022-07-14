@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 )
 
 // 添加位置
@@ -60,24 +61,19 @@ func PlaceEditByID(place Place) error {
 	return nil
 }
 
-//删除位置
+// PlaceDel 删除位置
 func PlaceDel(id int) error {
-	//GLOBAL_DB, err := getConn()
-	//if err != nil {
-	//	return err
-	//}
-	//defer GLOBAL_DB.Close()
-
 	place := Place{ID: uint(id)}
 
 	//检测是否有物资在此位置，有的话则不能删除
-	m := Material{}
-	m.PlaceID = place.ID
 	var count int64 = -1
-	err := GlobalDb.Find(&m).Count(&count).Error
+	err := GlobalDb.
+		Model(&Material{}).
+		Where("place_id = ?", id).
+		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("删除失败")
+		logs.Error(err)
+		return errors.New("删除失败#1")
 	}
 
 	if count != 0 {
@@ -86,8 +82,8 @@ func PlaceDel(id int) error {
 
 	err = GlobalDb.Delete(&place).Error
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("删除失败")
+		logs.Error(err)
+		return errors.New("删除失败#2")
 	}
 	return nil
 
