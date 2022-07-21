@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cailiao_server/config"
 	"cailiao_server/router"
 	"cailiao_server/utils"
 	"github.com/beego/beego/v2/core/logs"
@@ -11,10 +12,10 @@ func main() {
 	r := gin.Default()
 
 	//设置模式
-	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(config.RUN_MOD)
 
 	//设置日志
-	utils.SetLogger2()
+	utils.SetLogger()
 
 	// 注册路由
 	router.DefineRouter(r)
@@ -22,5 +23,5 @@ func main() {
 
 	logs.Info("系统启动成功")
 
-	_ = r.Run(":7090")
+	_ = r.Run(":9503")
 }

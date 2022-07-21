@@ -4,8 +4,10 @@ import (
 	"cailiao_server/models"
 	"cailiao_server/utils"
 	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -38,7 +40,7 @@ func UserLogin(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(data.Pwd, user.Password)
+	//fmt.Println(data.Pwd, user.Password)
 	//检验用户密码
 	if !models.UserIsPwdSame(data.Pwd, user.Password) {
 		c.JSON(http.StatusOK, gin.H{
@@ -128,6 +130,84 @@ func UserUpdateById(c *gin.Context) {
 
 }
 
+//initUser 初始化用户
+func UserInitUser(c *gin.Context) {
+	//查看初始化文件是否存在
+	initFile := "./assets/init.txt"
+	if _, err := os.Stat(initFile); err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("文件不存在")
+			//初始化文件目录
+			if err := os.Mkdir("./uploads", os.ModePerm); err != nil {
+				logs.Error(err)
+			}
+			if err = os.Mkdir("./logs", os.ModePerm); err != nil {
+				logs.Error(err)
+			}
+			//生成默认车号
+			car := models.Car{
+				Car: "默认车号",
+			}
+			if err = models.CarAdd(&car); err != nil {
+				logs.Error(err)
+			}
+			if car, err = models.CarRandomGetOne(); err != nil {
+				logs.Error(err)
+			}
+
+			//生成超级用户
+			phone := utils.RandPhoneStringRunes(11)
+			password := utils.RandStringRunes(6)
+			user := models.User{
+				Phone:    phone,
+				RealName: "默认超级管理员",
+				Password: password,
+				Role:     "admin",
+				CarID:    car.ID,
+			}
+			if _, err := models.UserAddUser(&user); err != nil {
+				logs.Error(err)
+				c.JSON(http.StatusOK, gin.H{
+					"code": 4000,
+					"msg":  "系统初始化失败#2",
+				})
+				return
+			}
+
+			logs.Info("初始化账户:%s ||  初始化密码:%s", phone, password)
+
+			//新建init文件
+			f, _ := os.Create(initFile)
+			defer f.Close()
+
+			c.JSON(http.StatusOK, gin.H{
+				"code": 2000,
+				"msg":  "系统已初始化",
+				"data": gin.H{
+					"phone":    phone,
+					"password": password,
+				},
+			})
+
+			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"code": 4000,
+				"msg":  "系统初始化失败#1",
+				"data": gin.H{},
+			})
+			return
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"code": 2000,
+			"msg":  "系统已初始化",
+			"data": gin.H{},
+		})
+		return
+	}
+}
+
 // UserAddUser 添加用户
 func UserAddUser(c *gin.Context) {
 	data := struct {
@@ -215,7 +295,7 @@ func UserDeleteById(c *gin.Context) {
 // UserCheckLogin 检查是否登录
 func UserCheckLogin(c *gin.Context) {
 	jwt := c.GetHeader("jwt")
-
+	logs.Info(jwt)
 	phone, _, err := utils.ParseJWT(jwt)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{

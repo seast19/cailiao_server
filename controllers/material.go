@@ -4,6 +4,7 @@ import (
 	"cailiao_server/models"
 	"cailiao_server/utils"
 	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
 	"net/http"
@@ -33,7 +34,7 @@ func MaterialAdd(c *gin.Context) {
 
 	err := c.BindJSON(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -46,7 +47,7 @@ func MaterialAdd(c *gin.Context) {
 
 	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -95,19 +96,19 @@ func MaterialAddAll(c *gin.Context) {
 	// 单文件
 	file, err := c.FormFile("file")
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusCreated, gin.H{
 			"code": 4000,
 			"msg":  "上传失败，获取文件失败",
 		})
 		return
 	}
-	fmt.Println(file.Filename)
+	//fmt.Println(file.Filename)
 	dst := "./uploads/" + file.Filename
 	// 上传文件至指定的完整文件路径
 	err = c.SaveUploadedFile(file, dst)
 	if err != nil {
-		c.JSON(http.StatusCreated, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
 			"msg":  "上传失败，保存文件失败",
 		})
@@ -117,7 +118,7 @@ func MaterialAddAll(c *gin.Context) {
 	//解析xlsx文件
 	f, err := excelize.OpenFile(dst)
 	if err != nil {
-		c.JSON(http.StatusCreated, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
 			"msg":  "上传失败，文件格式错误",
 		})
@@ -125,12 +126,12 @@ func MaterialAddAll(c *gin.Context) {
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 		}
 	}()
 	rows, err := f.GetRows("Sheet1")
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return
 	}
 
@@ -138,7 +139,7 @@ func MaterialAddAll(c *gin.Context) {
 	jwt := c.GetHeader("jwt")
 	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -168,26 +169,26 @@ func MaterialAddAll(c *gin.Context) {
 		axis5 := fmt.Sprintf("F%d", rowIndex+1)
 		placeID, _ := f.GetCellValue("Sheet1", axis5)
 
-		axis6 := fmt.Sprintf("G%d", rowIndex+1)
+		axis6 := fmt.Sprintf("H%d", rowIndex+1)
 		floor, _ := f.GetCellValue("Sheet1", axis6)
 
-		axis7 := fmt.Sprintf("H%d", rowIndex+1)
+		axis7 := fmt.Sprintf("I%d", rowIndex+1)
 		location, _ := f.GetCellValue("Sheet1", axis7)
 
-		axis8 := fmt.Sprintf("I%d", rowIndex+1)
+		axis8 := fmt.Sprintf("J%d", rowIndex+1)
 		count, _ := f.GetCellValue("Sheet1", axis8)
 
-		axis9 := fmt.Sprintf("J%d", rowIndex+1)
+		axis9 := fmt.Sprintf("K%d", rowIndex+1)
 		prepareCount, _ := f.GetCellValue("Sheet1", axis9)
 
-		axis10 := fmt.Sprintf("K%d", rowIndex+1)
+		axis10 := fmt.Sprintf("L%d", rowIndex+1)
 		warnCount, _ := f.GetCellValue("Sheet1", axis10)
 
-		axis11 := fmt.Sprintf("L%d", rowIndex+1)
+		axis11 := fmt.Sprintf("M%d", rowIndex+1)
 		marks, _ := f.GetCellValue("Sheet1", axis11)
 
-		axis12 := fmt.Sprintf("M%d", rowIndex+1)
-		carID, _ := f.GetCellValue("Sheet1", axis12)
+		//axis12 := fmt.Sprintf("G%d", rowIndex+1)
+		//carID, _ := f.GetCellValue("Sheet1", axis12)
 
 		ms = append(ms, models.Material{
 			Name:         name,
@@ -195,7 +196,7 @@ func MaterialAddAll(c *gin.Context) {
 			NickName:     nickname,
 			Unit:         unit,
 			PlaceID:      uint(utils.StringToInt(placeID)),
-			CarID:        uint(utils.StringToInt(carID)),
+			CarID:        user.CarID,
 			Floor:        utils.StringToInt(floor),
 			Location:     utils.StringToInt(location),
 			Count:        utils.StringToInt(count),
@@ -211,7 +212,7 @@ func MaterialAddAll(c *gin.Context) {
 	//fmt.Println(ms)
 	err = models.MaterialAddAll(ms)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "批量添加失败",
@@ -238,7 +239,7 @@ func MaterialSearch(c *gin.Context) {
 
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -249,7 +250,7 @@ func MaterialSearch(c *gin.Context) {
 	//fmt.Println(data)
 	materials, count, err := models.MaterialSearchByKey(data.Key, data.Car, data.Place, data.Page, data.PerPage)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -279,7 +280,7 @@ func MaterialWarn(c *gin.Context) {
 
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -290,7 +291,7 @@ func MaterialWarn(c *gin.Context) {
 	//fmt.Println(data)
 	materials, count, err := models.MaterialWarnByCar(data.Car, data.Place, data.Page, data.PerPage)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -457,27 +458,27 @@ func MaterialUpdateOneById(c *gin.Context) {
 // MaterialDownload 下载材料清单
 func MaterialDownload(c *gin.Context) {
 	data := struct {
-		Page    int    `json:"page" form:"page"`         //页码
-		PerPage int    `json:"per_page" form:"per_page"` //每页数量
-		Key     string `json:"key" form:"key"`           // 搜索关键字
-		Car     int    `json:"car" form:"car"`           // 选择车号
-		Place   int    `json:"place" form:"place"`       // 选择位置
+		//Page    int    `json:"page" form:"page"`         //页码
+		//PerPage int    `json:"per_page" form:"per_page"` //每页数量
+		Key   string `json:"key" form:"key"`     // 搜索关键字
+		Car   int    `json:"car" form:"car"`     // 选择车号
+		Place int    `json:"place" form:"place"` // 选择位置
 
 	}{}
 
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{
+		logs.Error(err)
+		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
 		})
 		return
 	}
 
-	materials, err := models.MaterialDownloadByKey(data.Key, data.Car, data.Place, data.Page, data.PerPage)
+	materials, err := models.MaterialDownloadByKey(data.Key, data.Car, data.Place)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
 			"msg":  err.Error(),
@@ -488,12 +489,12 @@ func MaterialDownload(c *gin.Context) {
 	//	构建xlsx文件
 	f, err := excelize.OpenFile("assets/下载材料清单模板.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 		}
 	}()
 	//fmt.Println(materials)
@@ -503,6 +504,7 @@ func MaterialDownload(c *gin.Context) {
 		axis := fmt.Sprintf("A%d", i+4)
 		//fmt.Println(axis)
 		err := f.SetSheetRow("Sheet1", axis, &[]interface{}{
+			i + 1,
 			material.ID,
 			material.Name,
 			material.Model,
@@ -513,13 +515,13 @@ func MaterialDownload(c *gin.Context) {
 			material.Location,
 			material.Count,
 			material.PrepareCount,
-			material.WarnCount,
+			//material.WarnCount,
 			material.User.RealName,
 			material.Car.Car,
 			material.Marks,
 		})
 		if err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 			panic(err)
 		}
 	}
@@ -527,7 +529,7 @@ func MaterialDownload(c *gin.Context) {
 	filename := fmt.Sprintf("statics/%s材料清单-%d.xlsx", materials[0].Car.Car, time.Now().Unix())
 	err = f.SaveAs(filename)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -551,7 +553,7 @@ func MaterialDownloadWarn(c *gin.Context) {
 
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -559,9 +561,9 @@ func MaterialDownloadWarn(c *gin.Context) {
 		return
 	}
 
-	materials, err := models.MaterialDownloadWarnByCar(data.Car, data.Place, data.Page, data.PerPage)
+	materials, err := models.MaterialDownloadWarnByCar(data.Car, data.Place)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
 			"msg":  err.Error(),
@@ -572,12 +574,12 @@ func MaterialDownloadWarn(c *gin.Context) {
 	//	构建xlsx文件
 	f, err := excelize.OpenFile("assets/下载材料清单模板.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 		}
 	}()
 	//fmt.Println(materials)
@@ -587,6 +589,7 @@ func MaterialDownloadWarn(c *gin.Context) {
 		axis := fmt.Sprintf("A%d", i+4)
 		//fmt.Println(axis)
 		err := f.SetSheetRow("Sheet1", axis, &[]interface{}{
+			i + 1,
 			material.ID,
 			material.Name,
 			material.Model,
@@ -597,13 +600,13 @@ func MaterialDownloadWarn(c *gin.Context) {
 			material.Location,
 			material.Count,
 			material.PrepareCount,
-			material.WarnCount,
+			//material.WarnCount,
 			material.User.RealName,
 			material.Car.Car,
 			material.Marks,
 		})
 		if err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 			panic(err)
 		}
 	}
@@ -611,7 +614,7 @@ func MaterialDownloadWarn(c *gin.Context) {
 	filename := fmt.Sprintf("statics/%s备料清单-%d.xlsx", materials[0].Car.Car, time.Now().Unix())
 	err = f.SaveAs(filename)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

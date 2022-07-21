@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"cailiao_server/models"
-	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -55,7 +55,7 @@ func PlaceGetPlaceByPage(c *gin.Context) {
 	}{}
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -95,7 +95,7 @@ func PlaceGetAll(c *gin.Context) {
 	}{}
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",

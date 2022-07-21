@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"github.com/beego/beego/v2/core/logs"
 	"gorm.io/gorm"
 	"time"
@@ -36,13 +35,10 @@ func RecordAddSend(r *Record) error {
 	//库存数比发料数少
 	if m.Count < r.SendCount {
 		tx.Rollback()
-		return errors.New("此物资库存数不足以发料")
+		return errors.New("此物资库存数不足")
 	}
 
 	//创建record记录
-	//r.SendCount = r.SendCount
-	//r.BeforeCount = m.Count
-	//r.AfterCount = m.Count - r.CountChange
 	err = tx.Create(r).Error
 	if err != nil {
 		logs.Error(err)
@@ -184,7 +180,7 @@ func RecordGetAllWithCarByPage(page, perPage int, t string, startT, stopT int, c
 			Where("car_id = ? or 0 = ?", cid, cid).
 			Find(&materials).Error
 		if err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 			return []Record{}, 0, err
 		}
 		for _, material := range materials {
@@ -201,11 +197,11 @@ func RecordGetAllWithCarByPage(page, perPage int, t string, startT, stopT int, c
 		Where("type = ? or '' = ?", t, t).
 		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
 		Where("material_id in ? or 0 = ?", mids, cid).
-		Offset((page - 1) * perPage).Limit(perPage).
 		Order("id DESC").
+		Offset((page - 1) * perPage).Limit(perPage).
 		Find(&records).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Record{}, 0, err
 	}
 
@@ -220,11 +216,11 @@ func RecordGetAllWithCarByPage(page, perPage int, t string, startT, stopT int, c
 		Where("type = ? or '' = ?", t, t).
 		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
 		Where("material_id in ? or 0 = ?", mids, cid).
-		Offset((page - 1) * perPage).Limit(perPage).
-		Order("id DESC").
+		//Offset((page - 1) * perPage).Limit(perPage).
+		//Order("id DESC").
 		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Record{}, 0, err
 	}
 
@@ -247,11 +243,11 @@ func RecordGetAllWithMIdByPage(page, perPage int, t string, startT, stopT int, m
 		Where("type = ? or '' = ?", t, t).
 		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
 		Where("material_id = ? or 0 = ?", mid, mid).
-		Offset((page - 1) * perPage).Limit(perPage).
 		Order("id DESC").
+		Offset((page - 1) * perPage).Limit(perPage).
 		Find(&records).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Record{}, 0, err
 	}
 
@@ -265,11 +261,11 @@ func RecordGetAllWithMIdByPage(page, perPage int, t string, startT, stopT int, m
 		Where("type = ? or '' = ?", t, t).
 		Where("(create_at >= ? AND create_at <= ?) or (0 = ?)", startT, stopT, startT).
 		Where("material_id = ? or 0 = ?", mid, mid).
-		Offset((page - 1) * perPage).Limit(perPage).
-		Order("id DESC").
+		//Offset((page - 1) * perPage).Limit(perPage).
+		//Order("id DESC").
 		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Record{}, 0, err
 	}
 

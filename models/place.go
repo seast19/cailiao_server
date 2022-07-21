@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"github.com/beego/beego/v2/core/logs"
 )
 
@@ -21,6 +20,7 @@ func PlaceGetById(id int) (Place, error) {
 	place := Place{}
 	err := GlobalDb.Where(&Place{ID: uint(id)}).First(&place).Error
 	if err != nil {
+		logs.Error(err)
 		return Place{}, err
 	}
 
@@ -36,7 +36,7 @@ func PlaceEditByID(place Place) error {
 			"Remarks":  place.Remarks,
 		}).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return err
 	}
 	return nil
@@ -77,10 +77,10 @@ func PlaceAll(carId uint) ([]Place, error) {
 	err := GlobalDb.
 		Preload("Car").
 		Where("car_id = ?", carId).
-		Order("id DESC").
+		Order("id").
 		Find(&places).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return nil, errors.New("查询失败")
 	}
 
@@ -94,20 +94,21 @@ func PlaceAllGetPlaceByPage(carId uint, page, perPage int) ([]Place, int64, erro
 	err := GlobalDb.
 		Preload("Car").
 		Where("car_id = ? or 0 = ?", carId, carId).
+		Order("id DESC").
 		Offset((page - 1) * perPage).
 		Limit(perPage).
-		Order("id DESC").
 		Find(&places).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return nil, 0, errors.New("查询失败")
 	}
 
 	err = GlobalDb.
 		Model(Place{}).
+		Where("car_id = ? or 0 = ?", carId, carId).
 		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return nil, 0, errors.New("查询失败")
 	}
 

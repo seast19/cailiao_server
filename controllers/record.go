@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"cailiao_server/models"
-	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -19,7 +19,7 @@ func RecordAdd(c *gin.Context) {
 
 	err := c.BindJSON(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -31,7 +31,7 @@ func RecordAdd(c *gin.Context) {
 	jwt := c.GetHeader("jwt")
 	user, err := models.UserGetByJwt(jwt)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -53,7 +53,7 @@ func RecordAdd(c *gin.Context) {
 		record.SendCount = data.ChangeCount
 		err = models.RecordAddSend(&record)
 		if err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 			c.JSON(http.StatusOK, gin.H{
 				"code": 4000,
 				"msg":  err.Error(),
@@ -64,7 +64,7 @@ func RecordAdd(c *gin.Context) {
 		record.ReceiveCount = data.ChangeCount
 		err = models.RecordAddReceive(&record)
 		if err != nil {
-			fmt.Println(err)
+			logs.Error(err)
 			c.JSON(http.StatusOK, gin.H{
 				"code": 4000,
 				"msg":  err.Error(),
@@ -94,7 +94,7 @@ func RecordGetPolyWithCardByPage(c *gin.Context) {
 
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -139,7 +139,7 @@ func RecordGetAllByPageAndSearch(c *gin.Context) {
 
 	err := c.BindQuery(&data)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 4001,
 			"msg":  "参数错误",
@@ -148,7 +148,7 @@ func RecordGetAllByPageAndSearch(c *gin.Context) {
 	}
 
 	//	查询
-	fmt.Println(data)
+	//fmt.Println(data)
 	records := []models.Record{}
 	var count int64
 	if data.MaterialID == 0 {
@@ -197,7 +197,7 @@ func RecordDelById(c *gin.Context) {
 
 	err = models.RecordDelById(idNum)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		c.JSON(http.StatusOK, gin.H{
 			"code": 4000,
 			"msg":  "删除失败",

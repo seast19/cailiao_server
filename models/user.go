@@ -159,8 +159,8 @@ func UserGetAllByPage(page, perPage int) ([]User, int64, error) {
 	err := GlobalDb.
 		Preload("Car").
 		Omit("password").
-		Offset(perPage * (page - 1)).Limit(perPage).
 		Order("id DESC").
+		Offset(perPage * (page - 1)).Limit(perPage).
 		Find(&users).Error
 	if err != nil {
 		logs.Error(err)
@@ -177,5 +177,3 @@ func UserGetAllByPage(page, perPage int) ([]User, int64, error) {
 
 	return users, count, nil
 }
-
-

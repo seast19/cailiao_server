@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"github.com/beego/beego/v2/core/logs"
 	"gorm.io/gorm"
 )
@@ -11,7 +10,7 @@ import (
 func MaterialAdd(m *Material) error {
 	err := GlobalDb.Create(m).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return err
 	}
 	return nil
@@ -21,7 +20,7 @@ func MaterialAdd(m *Material) error {
 func MaterialAddAll(m []Material) error {
 	err := GlobalDb.Create(&m).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return err
 	}
 	return nil
@@ -63,7 +62,7 @@ func MaterialDel(id int) error {
 //更新材料
 func MaterialEditByID(material Material) error {
 
-	fmt.Println(material)
+	//fmt.Println(material)
 	err := GlobalDb.Model(&Material{ID: material.ID}).Updates(
 		map[string]interface{}{
 			"Name":     material.Name,
@@ -85,7 +84,7 @@ func MaterialEditByID(material Material) error {
 			"UserID": material.UserID,
 		}).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return err
 	}
 	return nil
@@ -119,17 +118,18 @@ func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material,
 		Preload("User", func(db *gorm.DB) *gorm.DB {
 			return db.Preload("Car").Omit("password")
 		}).
-		Where("place_id = ? or 0 = ?", place, place).
+		Where("materials.place_id = ? or 0 = ?", place, place).
 		Where("materials.car_id = ? or 0 = ?", car, car).
 		Where("name LIKE ? OR model LIKE ?", regKey, regKey).
 		Joins("join places on places.id = materials.place_id").
 		Order("places.position").
 		Order("floor").
 		Order("location").
+		Order("id").
 		Offset((page - 1) * perPage).Limit(perPage).
 		Find(&materials).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Material{}, 0, err
 	}
 
@@ -142,7 +142,7 @@ func MaterialSearchByKey(key string, car, place, page, perPage int) ([]Material,
 		Where("name LIKE ? OR model LIKE ?", regKey, regKey).
 		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Material{}, 0, err
 	}
 
@@ -173,7 +173,7 @@ func MaterialWarnByCar(car, place, page, perPage int) ([]Material, int64, error)
 		Offset((page - 1) * perPage).Limit(perPage).
 		Find(&materials).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Material{}, 0, err
 	}
 
@@ -186,7 +186,7 @@ func MaterialWarnByCar(car, place, page, perPage int) ([]Material, int64, error)
 		Where("count < prepare_count").
 		Count(&count).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Material{}, 0, err
 	}
 
@@ -195,7 +195,7 @@ func MaterialWarnByCar(car, place, page, perPage int) ([]Material, int64, error)
 
 // MaterialDownloadByKey 下载材料清单
 //下载时必须选择车号
-func MaterialDownloadByKey(key string, carID, placeID, page, perPage int) ([]Material, error) {
+func MaterialDownloadByKey(key string, carID, placeID int) ([]Material, error) {
 	var materials []Material
 	if carID <= 0 {
 		return nil, errors.New("下载材料清单必须选择车号")
@@ -215,18 +215,19 @@ func MaterialDownloadByKey(key string, carID, placeID, page, perPage int) ([]Mat
 		Order("place_id").
 		Order("floor").
 		Order("location").
+		Order("id").
 		Find(&materials).Error
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 		return []Material{}, err
 	}
 
 	return materials, nil
 }
 
-// MaterialDownloadByKey 下载材料清单
+// MaterialDownloadWarnByCar  下载备料材料清单
 //下载时必须选择车号
-func MaterialDownloadWarnByCar(carID, placeID, page, perPage int) ([]Material, error) {
+func MaterialDownloadWarnByCar(carID, placeID int) ([]Material, error) {
 	var materials []Material
 	if carID <= 0 {
 		return nil, errors.New("下载材料清单必须选择车号")
@@ -246,6 +247,7 @@ func MaterialDownloadWarnByCar(carID, placeID, page, perPage int) ([]Material, e
 		Order("place_id").
 		Order("floor").
 		Order("location").
+		Order("id").
 		Find(&materials).Error
 	if err != nil {
 		logs.Error(err)

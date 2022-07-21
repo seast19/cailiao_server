@@ -1,6 +1,7 @@
 package models
 
 import (
+	"cailiao_server/config"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -37,7 +38,7 @@ type User struct {
 type Place struct {
 	//gorm.Model
 	ID       uint   `gorm:"primary_key"`
-	Position string `gorm:"size:255;not null"`
+	Position string `gorm:"size:100;not null"`
 	Remarks  string `gorm:"size:255"`
 
 	Car   Car //关联车号，以车号来区分  tips:一定要不保存关联，否则原始数据会被覆盖
@@ -48,7 +49,7 @@ type Place struct {
 type Car struct {
 	//gorm.Model
 	ID      uint   `gorm:"primary_key"`
-	Car     string `gorm:"size:255;unique;not null"`
+	Car     string `gorm:"size:100;unique;not null"`
 	Remarks string `gorm:"size:255"`
 }
 
@@ -56,7 +57,7 @@ type Car struct {
 type Material struct {
 	//gorm.Model
 	ID       uint   `gorm:"primary_key"`
-	Name     string `gorm:"size:255;not null"` //名称
+	Name     string `gorm:"size:100;not null"` //名称
 	Model    string `gorm:"size:255"`          //型号
 	NickName string `gorm:"size:255"`          //俗称
 	Unit     string `gorm:"size:255"`          //计量单位
@@ -132,7 +133,8 @@ type RecordPoly struct {
 //初始化
 func init() {
 	// 连接数据库配置
-	dsn := "cailiao:123456@tcp(127.0.0.1:3306)/cailiao?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		config.MYSQL_USER, config.MYSQL_PASSWORD, config.MYSQL_DATABASE_NAME)
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:                       dsn,
 		DefaultStringSize:         256,   // string 类型字段的默认长度
